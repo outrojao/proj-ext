@@ -23,24 +23,24 @@ git clone <link-do-repositorio>
 ```
 
 Entre na pasta do projeto:
-
+```bash
 cd <nome-do-repositorio>
+```
 
 ### 3. Atualize o projeto
 
 Antes de começar a trabalhar:
-
+```bash
 git pull
+```
 
 ## Branches
-Branch	Uso
-main	Versão estável do projeto
-
-dev	Desenvolvimento e testes
-
-feature/*	Desenvolvimento de novas funcionalidades
-
-hotfix/*	Correções urgentes na main
+|Branch|Uso|
+|----------|-------|
+|main|Versão estável do projeto|
+|dev|Desenvolvimento e testes|
+|feature/* |Desenvolvimento de novas funcionalidades|
+|hotfix/* |Correções urgentes na main|
 
 ### Fluxo
 feature/* → dev → main
@@ -57,13 +57,15 @@ hotfix/* → dev
 ### Criando uma Feature
 
 As features devem ser criadas a partir da dev:
-
+```bash
 git checkout dev
-
+```
+```bash
 git pull
-
+```
+```bash
 git checkout -b feature/nome-da-feature
-
+```
 
 ### Exemplos:
 
@@ -97,19 +99,25 @@ test — testes
 chore — manutenção
 
 ### Exemplos
+```bash
 git commit -m "feat: adicionar pagamento"
-
+```
+```bash
 git commit -m "fix: corrigir comunicação com painel"
-
+```
+```bash
 git commit -m "docs: atualizar README"
-
+```
 
 ### Enviando alterações
+```bash
 git add .
-
+```
+```bash
 git commit -m "tipo: descrição"
-
+```
+```bash
 git push
-
+```
 
 Após o desenvolvimento e os testes na dev, as alterações podem ser integradas à main.
