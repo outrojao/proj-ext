@@ -4,9 +4,24 @@ Sistema integrado para gerenciamento de pedidos, pagamentos e comunicação com 
 
 ## Componentes
 
-- **App Mobile:** desenvolvido em Flutter, responsável pela comunicação com a maquininha de cartão, impressora e painel LED.
-- **Painel LED:** desenvolvido com ESP32 para exibição dos números dos pedidos.
+- **App Mobile:** Responsável pela comunicação com a maquininha de cartão, site PWA, impressora e painel LED.
 - **Site PWA:** permite agendamento de pedidos, pagamento antecipado ou pagamento no local.
+- **Painel LED:** desenvolvido com ESP32 para exibição dos números dos pedidos.
+
+## Escopo
+- **App Mobile:**
+  - Recebe pagamentos concluídos pela máquininha e processa o pedido para impressora e painel Led;
+  - Confirma ou rejeita os pedidos vindos do site PWA;
+  - Atualiza os itens disponíveis no site PWA.
+ 
+- **Site PWA:**
+  - Permite que o cliente selecione os itens desejados e um horário para agendamento do pedido;
+  - Caso confirmado o pagamento é liberado e se não é cancelado;
+  - Com pagamento feito o cliente recebe o número do seu pedido.
+ 
+- **Painel Led:**
+  - Recebe o número dos pedidos agendados prontos e exibe na tela;
+  - Assim que o pedido é marcado como entregue o próximo pedido é exibido na tela.
 
 ## Como iniciar o desenvolvimento
 
