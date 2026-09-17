@@ -9,16 +9,17 @@ Sistema integrado para gerenciamento de pedidos, pagamentos e comunicação com 
 - **Painel LED:** desenvolvido com ESP32 para exibição dos números dos pedidos.
 
 ## Escopo
+
 - **App Mobile:**
   - Recebe pagamentos concluídos pela máquininha e processa o pedido para impressora e painel Led;
   - Confirma ou rejeita os pedidos vindos do site PWA;
   - Atualiza os itens disponíveis no site PWA.
- 
+
 - **Site PWA:**
   - Permite que o cliente selecione os itens desejados e um horário para agendamento do pedido;
   - Caso confirmado o pagamento é liberado e se não é cancelado;
   - Com pagamento feito o cliente recebe o número do seu pedido.
- 
+
 - **Painel Led:**
   - Recebe o número dos pedidos agendados prontos e exibe na tela;
   - Assim que o pedido é marcado como entregue o próximo pedido é exibido na tela.
@@ -38,6 +39,7 @@ git clone <link-do-repositorio>
 ```
 
 Entre na pasta do projeto:
+
 ```bash
 cd <nome-do-repositorio>
 ```
@@ -45,51 +47,55 @@ cd <nome-do-repositorio>
 ### 3. Atualize o projeto
 
 Antes de começar a trabalhar:
+
 ```bash
 git pull
 ```
 
 ## Branches
-|Branch|Uso|
-|----------|-------|
-|main|Versão estável do projeto|
-|dev|Desenvolvimento e testes|
-|feature/* |Desenvolvimento de novas funcionalidades|
-|hotfix/* |Correções urgentes na main|
+
+| Branch     | Uso                                      |
+| ---------- | ---------------------------------------- |
+| main       | Versão estável do projeto                |
+| dev        | Desenvolvimento e testes                 |
+| feature/\* | Desenvolvimento de novas funcionalidades |
+| hotfix/\*  | Correções urgentes na main               |
 
 ### Fluxo
-feature/* → dev → main
 
+feature/\* → dev → main
 
-### Para correções urgentes:
+### Para correções urgentes
 
-hotfix/* → main
+hotfix/\* → main
 
 OU
 
-hotfix/* → dev
+hotfix/\* → dev
 
 ### Criando uma Feature
 
 As features devem ser criadas a partir da dev:
+
 ```bash
 git checkout dev
 ```
+
 ```bash
 git pull
 ```
+
 ```bash
 git checkout -b feature/nome-da-feature
 ```
 
-### Exemplos:
+### Exemplos
 
 feature/pagamento
 
 feature/painel-led
 
 feature/impressora
-
 
 Após finalizar o desenvolvimento, faça um Pull Request da feature para a dev.
 
@@ -98,9 +104,11 @@ Após finalizar o desenvolvimento, faça um Pull Request da feature para a dev.
 Utilizamos o padrão Conventional Commits.
 
 ### Formato
+
 tipo: descrição
 
 ### Tipos principais
+
 feat — nova funcionalidade
 
 fix — correção
@@ -113,24 +121,30 @@ test — testes
 
 chore — manutenção
 
-### Exemplos
+### Exemplos de commit
+
 ```bash
 git commit -m "feat: adicionar pagamento"
 ```
+
 ```bash
 git commit -m "fix: corrigir comunicação com painel"
 ```
+
 ```bash
 git commit -m "docs: atualizar README"
 ```
 
 ### Enviando alterações
+
 ```bash
 git add .
 ```
+
 ```bash
 git commit -m "tipo: descrição"
 ```
+
 ```bash
 git push
 ```
