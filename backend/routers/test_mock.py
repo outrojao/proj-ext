@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Item, Pedido, PedidoItem
 from routers.pedidos import gerar_numero_pedido
-from websocket_manager import manager
+from websocket_manager import manager, websocket_event
 
 router = APIRouter(prefix="/test", tags=["teste"])
 
@@ -154,9 +154,13 @@ async def fluxo_completo(db: Session = Depends(get_db)):
     passos.append({"passo": 1, "acao": "criar_pedido", "pedido_id": pedido.id, "status": "PENDENTE", "numero": None})
 
     # Notificar App Mobile
-    await manager.send_to_client("app_mobile", {
-        "event": "novo_pedido", "pedido_id": pedido.id, "status": "PENDENTE"
-    })
+    await manager.send_to_client(
+        "app_mobile",
+        websocket_event("novo_pedido", {
+            "pedido_id": pedido.id,
+            "status": "PENDENTE",
+        }),
+    )
 
     # 2. Confirmar
     pedido.status = "CONFIRMADO"
@@ -164,9 +168,14 @@ async def fluxo_completo(db: Session = Depends(get_db)):
     db.refresh(pedido)
     passos.append({"passo": 2, "acao": "confirmar", "pedido_id": pedido.id, "status": "CONFIRMADO", "numero": None})
 
-    await manager.send_to_clients(["pwa", "app_mobile"], {
-        "event": "status_atualizado", "pedido_id": pedido.id, "status": "CONFIRMADO", "numero": None
-    })
+    await manager.send_to_clients(
+        ["pwa", "app_mobile"],
+        websocket_event("status_atualizado", {
+            "pedido_id": pedido.id,
+            "status": "CONFIRMADO",
+            "numero": None,
+        }),
+    )
 
     # 3. Pagar (gera número)
     numero = gerar_numero_pedido(db)
@@ -176,9 +185,14 @@ async def fluxo_completo(db: Session = Depends(get_db)):
     db.refresh(pedido)
     passos.append({"passo": 3, "acao": "pagar", "pedido_id": pedido.id, "status": "PAGO", "numero": numero})
 
-    await manager.send_to_clients(["pwa", "app_mobile"], {
-        "event": "status_atualizado", "pedido_id": pedido.id, "status": "PAGO", "numero": numero
-    })
+    await manager.send_to_clients(
+        ["pwa", "app_mobile"],
+        websocket_event("status_atualizado", {
+            "pedido_id": pedido.id,
+            "status": "PAGO",
+            "numero": numero,
+        }),
+    )
 
     # 4. Pronto (notifica painel LCD)
     pedido.status = "PRONTO"
@@ -186,11 +200,17 @@ async def fluxo_completo(db: Session = Depends(get_db)):
     db.refresh(pedido)
     passos.append({"passo": 4, "acao": "pronto", "pedido_id": pedido.id, "status": "PRONTO", "numero": numero})
 
-    await manager.send_to_clients(["pwa", "app_mobile"], {
-        "event": "status_atualizado", "pedido_id": pedido.id, "status": "PRONTO", "numero": numero
-    })
+    await manager.send_to_clients(
+        ["pwa", "app_mobile"],
+        websocket_event("status_atualizado", {
+            "pedido_id": pedido.id,
+            "status": "PRONTO",
+            "numero": numero,
+        }),
+    )
     await manager.send_to_client("esp32", {
-        "event": "pedido_pronto", "pedido_id": pedido.id, "numero": numero
+        "event": "pedido_pronto",
+        "data": {"pedido_id": pedido.id, "numero": numero},
     })
 
     # 5. Entregue (notifica painel LCD: próximo da fila)
@@ -199,11 +219,17 @@ async def fluxo_completo(db: Session = Depends(get_db)):
     db.refresh(pedido)
     passos.append({"passo": 5, "acao": "entregar", "pedido_id": pedido.id, "status": "ENTREGUE", "numero": numero})
 
-    await manager.send_to_clients(["pwa", "app_mobile"], {
-        "event": "status_atualizado", "pedido_id": pedido.id, "status": "ENTREGUE", "numero": numero
-    })
+    await manager.send_to_clients(
+        ["pwa", "app_mobile"],
+        websocket_event("status_atualizado", {
+            "pedido_id": pedido.id,
+            "status": "ENTREGUE",
+            "numero": numero,
+        }),
+    )
     await manager.send_to_client("esp32", {
-        "event": "pedido_entregue", "pedido_id": pedido.id
+        "event": "pedido_entregue",
+        "data": {"pedido_id": pedido.id, "numero": numero},
     })
 
     return {
@@ -234,9 +260,13 @@ async def fluxo_rejeitado(db: Session = Depends(get_db)):
     db.refresh(pedido)
 
     # Notificar App Mobile
-    await manager.send_to_client("app_mobile", {
-        "event": "novo_pedido", "pedido_id": pedido.id, "status": "PENDENTE"
-    })
+    await manager.send_to_client(
+        "app_mobile",
+        websocket_event("novo_pedido", {
+            "pedido_id": pedido.id,
+            "status": "PENDENTE",
+        }),
+    )
 
     # Rejeitar
     pedido.status = "CANCELADO"
@@ -244,9 +274,14 @@ async def fluxo_rejeitado(db: Session = Depends(get_db)):
     db.refresh(pedido)
 
     # Notificar PWA
-    await manager.send_to_clients(["pwa", "app_mobile"], {
-        "event": "status_atualizado", "pedido_id": pedido.id, "status": "CANCELADO", "numero": None
-    })
+    await manager.send_to_clients(
+        ["pwa", "app_mobile"],
+        websocket_event("status_atualizado", {
+            "pedido_id": pedido.id,
+            "status": "CANCELADO",
+            "numero": None,
+        }),
+    )
 
     return {
         "mensagem": "Pedido rejeitado simulado!",
@@ -294,7 +329,8 @@ async def fluxo_dois_pedidos(db: Session = Depends(get_db)):
     db.commit()
     db.refresh(pedidoA)
     await manager.send_to_client("esp32", {
-        "event": "pedido_pronto", "pedido_id": pedidoA.id, "numero": numeroA
+        "event": "pedido_pronto",
+        "data": {"pedido_id": pedidoA.id, "numero": numeroA},
     })
     passos.append({"pedido": "A", "numero": numeroA, "status": "PRONTO", "painel_exibe": f"#{numeroA:03d}"})
 
@@ -322,7 +358,8 @@ async def fluxo_dois_pedidos(db: Session = Depends(get_db)):
     db.commit()
     db.refresh(pedidoB)
     await manager.send_to_client("esp32", {
-        "event": "pedido_pronto", "pedido_id": pedidoB.id, "numero": numeroB
+        "event": "pedido_pronto",
+        "data": {"pedido_id": pedidoB.id, "numero": numeroB},
     })
     passos.append({"pedido": "B", "numero": numeroB, "status": "PRONTO", "painel_exibe": f"#{numeroA:03d} (A ainda na fila)"})
 
@@ -331,7 +368,8 @@ async def fluxo_dois_pedidos(db: Session = Depends(get_db)):
     db.commit()
     db.refresh(pedidoA)
     await manager.send_to_client("esp32", {
-        "event": "pedido_entregue", "pedido_id": pedidoA.id
+        "event": "pedido_entregue",
+        "data": {"pedido_id": pedidoA.id, "numero": numeroA},
     })
     passos.append({"pedido": "A", "numero": numeroA, "status": "ENTREGUE", "painel_exibe": f"#{numeroB:03d} (B é o próximo)"})
 

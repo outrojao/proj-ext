@@ -1,8 +1,6 @@
 .PHONY: install run dev test clean
 
 install:
-	python -m venv venv
-	venv\Scripts\activate
 	pip install -r requirements.txt
 	cp .env.example .env
 	@echo "Instalação concluída! Edite o arquivo .env com suas API keys."

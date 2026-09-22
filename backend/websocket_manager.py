@@ -10,6 +10,14 @@ from fastapi import WebSocket
 CLIENT_TYPES = {"app_mobile", "pwa", "esp32"}
 
 
+def websocket_event(event: str, data: dict | None = None) -> dict:
+    """Cria o envelope único usado por todos os eventos WebSocket."""
+    return {
+        "event": event,
+        "data": data or {},
+    }
+
+
 class ConnectionManager:
     def __init__(self):
         # Dict de listas de conexões por tipo de cliente

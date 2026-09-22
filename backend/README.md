@@ -80,6 +80,27 @@ Para WebSocket, a API key é passada via query param: `ws://host:8000/ws/esp32?a
 | `pedido_pronto`     | ESP32 (painel LCD) | Status vira PRONTO         |
 | `pedido_entregue`   | ESP32 (painel LCD) | Status vira ENTREGUE       |
 
+Todos os eventos WebSocket usam o mesmo envelope:
+
+```json
+{
+  "event": "nome_do_evento",
+  "data": {}
+}
+```
+
+Exemplo de `novo_pedido`:
+
+```json
+{
+  "event": "novo_pedido",
+  "data": {
+    "pedido_id": 10,
+    "status": "PENDENTE"
+  }
+}
+```
+
 ## Fluxo de Status
 
 ```text

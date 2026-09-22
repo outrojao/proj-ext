@@ -13,7 +13,7 @@ depends_on = None
 
 
 def upgrade():
-    op.create_sequence("pedido_numero_seq", start=1)
+    op.execute(sa.text("CREATE SEQUENCE pedido_numero_seq START WITH 1"))
 
     op.create_table(
         "itens",
@@ -57,4 +57,4 @@ def downgrade():
     op.drop_table("pedidos")
     op.drop_index("ix_itens_id", table_name="itens")
     op.drop_table("itens")
-    op.drop_sequence("pedido_numero_seq")
+    op.execute(sa.text("DROP SEQUENCE pedido_numero_seq"))

@@ -9,13 +9,21 @@ Configura:
 - Health check
 """
 
+import json
 import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from websocket_manager import manager, CLIENT_TYPES
+from websocket_manager import manager, CLIENT_TYPES, websocket_event
 from routers import itens, pedidos, test_mock
+from database import SessionLocal
+from painel_service import (
+    evento_pedido,
+    expirar_pedido,
+    iniciar_proximo_pedido,
+    pedido_exibindo,
+)
 
 # Carregar variáveis de ambiente (.env)
 load_dotenv()
@@ -101,10 +109,46 @@ async def websocket_endpoint(websocket: WebSocket, client_type: str):
         return
 
     await manager.connect(client_type, websocket)
+
+    if client_type == "esp32":
+        db = SessionLocal()
+        try:
+            pedido = pedido_exibindo(db) or iniciar_proximo_pedido(db)
+            if pedido:
+                await manager.send_to_client("esp32", evento_pedido("pedido_pronto", pedido))
+            else:
+                await manager.send_to_client("esp32", websocket_event("fila_vazia"))
+        finally:
+            db.close()
+
     try:
         while True:
-            # Mantém a conexão aberta; mensagens recebidas podem ser ignoradas
-            await websocket.receive_text()
+            raw_message = await websocket.receive_text()
+            if client_type != "esp32":
+                continue
+
+            try:
+                message = json.loads(raw_message)
+            except json.JSONDecodeError:
+                continue
+
+            if message.get("event") != "tempo_excedido":
+                continue
+
+            data = message.get("data") or message
+            pedido_id = data.get("pedido_id")
+            if not isinstance(pedido_id, int):
+                continue
+
+            db = SessionLocal()
+            try:
+                next_order = expirar_pedido(db, pedido_id)
+                if next_order:
+                    await manager.send_to_client("esp32", evento_pedido("pedido_pronto", next_order))
+                else:
+                    await manager.send_to_client("esp32", websocket_event("fila_vazia"))
+            finally:
+                db.close()
     except WebSocketDisconnect:
         manager.disconnect(client_type, websocket)
 

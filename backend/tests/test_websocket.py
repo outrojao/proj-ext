@@ -66,8 +66,8 @@ def test_ws_novo_pedido_notifica_app(client, api_headers):
         msg = ws_app.receive_text()
         data = json.loads(msg)
         assert data["event"] == "novo_pedido"
-        assert data["pedido_id"] == response.json()["id"]
-        assert data["status"] == "PENDENTE"
+        assert data["data"]["pedido_id"] == response.json()["id"]
+        assert data["data"]["status"] == "PENDENTE"
 
 
 def test_ws_status_atualizado_notifica_pwa_e_app(client, api_headers):
@@ -99,13 +99,13 @@ def test_ws_status_atualizado_notifica_pwa_e_app(client, api_headers):
         msg_pwa = ws_pwa.receive_text()
         data_pwa = json.loads(msg_pwa)
         assert data_pwa["event"] == "status_atualizado"
-        assert data_pwa["status"] == "CONFIRMADO"
+        assert data_pwa["data"]["status"] == "CONFIRMADO"
 
         # App recebe status_atualizado
         msg_app = ws_app.receive_text()
         data_app = json.loads(msg_app)
         assert data_app["event"] == "status_atualizado"
-        assert data_app["status"] == "CONFIRMADO"
+        assert data_app["data"]["status"] == "CONFIRMADO"
 
 
 def test_ws_pedido_pronto_notifica_esp32(client, api_headers):
@@ -114,6 +114,9 @@ def test_ws_pedido_pronto_notifica_esp32(client, api_headers):
 
     with client.websocket_connect("/ws/esp32?api_key=test-key-esp32") as ws_esp32, \
          client.websocket_connect("/ws/app_mobile?api_key=test-key-app") as ws_app:
+        # Sincronização inicial do painel sem pedidos prontos.
+        initial = json.loads(ws_esp32.receive_text())
+        assert initial["event"] == "fila_vazia"
 
         # Criar e levar até PRONTO
         create = client.post(
@@ -145,8 +148,8 @@ def test_ws_pedido_pronto_notifica_esp32(client, api_headers):
         msg = ws_esp32.receive_text()
         data = json.loads(msg)
         assert data["event"] == "pedido_pronto"
-        assert data["numero"] is not None
-        assert data["pedido_id"] == pedido_id
+        assert data["data"]["numero"] is not None
+        assert data["data"]["pedido_id"] == pedido_id
 
 
 def test_ws_pedido_entregue_notifica_esp32(client, api_headers):
@@ -155,6 +158,9 @@ def test_ws_pedido_entregue_notifica_esp32(client, api_headers):
 
     with client.websocket_connect("/ws/esp32?api_key=test-key-esp32") as ws_esp32, \
          client.websocket_connect("/ws/app_mobile?api_key=test-key-app") as ws_app:
+        # Sincronização inicial do painel sem pedidos prontos.
+        initial = json.loads(ws_esp32.receive_text())
+        assert initial["event"] == "fila_vazia"
 
         # Criar e levar até PRONTO
         create = client.post(
@@ -184,4 +190,4 @@ def test_ws_pedido_entregue_notifica_esp32(client, api_headers):
         msg = ws_esp32.receive_text()
         data = json.loads(msg)
         assert data["event"] == "pedido_entregue"
-        assert data["pedido_id"] == pedido_id
+        assert data["data"]["pedido_id"] == pedido_id

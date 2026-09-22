@@ -16,12 +16,17 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import or_, text
 
 from database import get_db
 from models import Pedido, PedidoItem, Item
+from painel_service import (
+    evento_pedido,
+    finalizar_exibicao,
+    preparar_pedido_pronto,
+)
 from schemas import PedidoCreate, PedidoResponse, StatusUpdate, NumeroResponse
-from websocket_manager import manager
+from websocket_manager import manager, websocket_event
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
 
@@ -93,11 +98,13 @@ async def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
     db.refresh(db_pedido)
 
     # Notificar App Mobile: novo pedido
-    await manager.send_to_client("app_mobile", {
-        "event": "novo_pedido",
-        "pedido_id": db_pedido.id,
-        "status": db_pedido.status,
-    })
+    await manager.send_to_client(
+        "app_mobile",
+        websocket_event("novo_pedido", {
+            "pedido_id": db_pedido.id,
+            "status": db_pedido.status,
+        }),
+    )
 
     return db_pedido
 
@@ -122,7 +129,14 @@ def fila_painel(db: Session = Depends(get_db)):
     """
     return (
         db.query(Pedido)
-        .filter(Pedido.status == "PRONTO", Pedido.origem == "PWA")
+        .filter(
+            Pedido.status == "PRONTO",
+            Pedido.origem == "PWA",
+            or_(
+                Pedido.painel_status == "AGUARDANDO",
+                Pedido.painel_status.is_(None),
+            ),
+        )
         .order_by(Pedido.numero)
         .all()
     )
@@ -187,26 +201,28 @@ async def atualizar_status(
     db.refresh(pedido)
 
     # Notificar PWA + App Mobile: status atualizado
-    await manager.send_to_clients(["pwa", "app_mobile"], {
-        "event": "status_atualizado",
-        "pedido_id": pedido.id,
-        "status": pedido.status,
-        "numero": pedido.numero,
-    })
-
-    # Se virou PRONTO, notificar painel LCD (ESP32)
-    if novo_status == "PRONTO" and pedido.origem == "PWA":
-        await manager.send_to_client("esp32", {
-            "event": "pedido_pronto",
+    await manager.send_to_clients(
+        ["pwa", "app_mobile"],
+        websocket_event("status_atualizado", {
             "pedido_id": pedido.id,
+            "status": pedido.status,
             "numero": pedido.numero,
-        })
+        }),
+    )
 
-    # Se virou ENTREGUE, notificar painel LCD para próximo da fila
+    # Se virou PRONTO, colocar na fila do painel LCD (ESP32).
+    if novo_status == "PRONTO" and pedido.origem == "PWA":
+        pedido_para_exibir = preparar_pedido_pronto(db, pedido)
+        if pedido_para_exibir:
+            await manager.send_to_client("esp32", evento_pedido("pedido_pronto", pedido_para_exibir))
+
+    # Se virou ENTREGUE, liberar o painel LCD e avançar a fila.
     if novo_status == "ENTREGUE" and pedido.origem == "PWA":
-        await manager.send_to_client("esp32", {
-            "event": "pedido_entregue",
-            "pedido_id": pedido.id,
-        })
+        proximo = finalizar_exibicao(db, pedido)
+        await manager.send_to_client("esp32", evento_pedido("pedido_entregue", pedido))
+        if proximo:
+            await manager.send_to_client("esp32", evento_pedido("pedido_pronto", proximo))
+        else:
+            await manager.send_to_client("esp32", websocket_event("fila_vazia"))
 
     return pedido

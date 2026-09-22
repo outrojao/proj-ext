@@ -2,7 +2,7 @@
 Modelos SQLAlchemy: Item, Pedido, PedidoItem.
 """
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -29,6 +29,10 @@ class Pedido(Base):
     status = Column(String, default="PENDENTE", nullable=False)
     origem = Column(String, default="PWA", nullable=False)  # Sempre "PWA" neste fluxo
     total = Column(Numeric(10, 2), default=0.0, nullable=False)
+    painel_status = Column(String, nullable=True)
+    painel_exibido_em = Column(DateTime, nullable=True)
+    painel_expirado_em = Column(DateTime, nullable=True)
+    painel_entregue_em = Column(DateTime, nullable=True)
 
     itens = relationship("PedidoItem", back_populates="pedido", cascade="all, delete-orphan")
 
