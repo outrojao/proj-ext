@@ -1,0 +1,15 @@
+{
+  "name": "Balcão 27 | Operação",
+  "short_name": "Balcão 27",
+  "description": "Pedidos, estoque e automação da operação.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f1",
+  "theme_color": "#123b35",
+  "icons": [{
+    "src": "icon.svg",
+    "sizes": "any",
+    "type": "image/svg+xml",
+    "purpose": "any maskable"
+  }]
+}

@@ -24,6 +24,18 @@ Sistema integrado para gerenciamento de pedidos, pagamentos e comunicação com 
   - Recebe o número dos pedidos agendados prontos e exibe na tela;
   - Assim que o pedido é marcado como entregue o próximo pedido é exibido na tela.
 
+## App Mobile (PWA de demonstração)
+
+A primeira versão da interface mobile está em `mobile-app/`. Para abrir localmente no Windows, execute na raiz do projeto:
+
+```powershell
+python -m http.server 8000 --directory mobile-app
+```
+
+Acesse `http://localhost:8000`. O app permite acompanhar e atualizar pedidos, ajustar disponibilidade e testar as regras de automação; os dados ficam salvos no navegador. Para instalar em um celular, publique em uma origem HTTPS e use a opção de instalação do navegador.
+
+Pagamentos, impressora e painel LED ainda são simulados. A integração real depende das APIs e dos protocolos dos dispositivos.
+
 ## Como iniciar o desenvolvimento
 
 ### 1. Instale o Git
