@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Item, Pedido, PedidoItem
-from routers.pedidos import gerar_numero_pedido
+from pedidos_service import marcar_pago
 from websocket_manager import manager, websocket_event
 
 router = APIRouter(prefix="/test", tags=["teste"])
@@ -61,31 +61,34 @@ def seed(db: Session = Depends(get_db)):
     db.add(PedidoItem(pedido_id=pedido1.id, item_id=itens_criados[2]["id"], quantidade=1))
     pedido1.total = 2 * 15.00 + 1 * 6.00  # 2x X-Burger + 1x Refrigerante = 36.00
 
-    # Pedido 2: PAGO (número gerado, cozinha imprimindo)
-    pedido2 = Pedido(horario_agendamento="13:00", status="PAGO", origem="PWA", total=0.0, numero=1)
+    # Pedido 2: PAGO (número + senha de retirada gerados, cozinha imprimindo)
+    pedido2 = Pedido(horario_agendamento="13:00", status="CONFIRMADO", origem="PWA", total=0.0)
     db.add(pedido2)
     db.flush()
     db.add(PedidoItem(pedido_id=pedido2.id, item_id=itens_criados[0]["id"], quantidade=1))
     db.add(PedidoItem(pedido_id=pedido2.id, item_id=itens_criados[3]["id"], quantidade=1))
     pedido2.total = 1 * 15.00 + 1 * 10.00  # 1x X-Burger + 1x Batata = 25.00
+    marcar_pago(db, pedido2)
 
     # Pedido 3: PRONTO (no painel LCD)
-    pedido3 = Pedido(horario_agendamento="12:45", status="PRONTO", origem="PWA", total=0.0, numero=2)
+    pedido3 = Pedido(horario_agendamento="12:45", status="CONFIRMADO", origem="PWA", total=0.0)
     db.add(pedido3)
     db.flush()
     db.add(PedidoItem(pedido_id=pedido3.id, item_id=itens_criados[1]["id"], quantidade=1))
     db.add(PedidoItem(pedido_id=pedido3.id, item_id=itens_criados[4]["id"], quantidade=2))
     pedido3.total = 1 * 16.00 + 2 * 12.00  # 1x X-Salada + 2x Milkshake = 40.00
-
+    marcar_pago(db, pedido3)
+    pedido3.status = "PRONTO"
     db.commit()
+    db.refresh(pedido3)
 
     return {
         "mensagem": "Dados de exemplo criados com sucesso!",
         "cardapio": itens_criados,
         "pedidos": [
             {"id": pedido1.id, "status": "PENDENTE", "numero": None, "total": pedido1.total},
-            {"id": pedido2.id, "status": "PAGO", "numero": 1, "total": pedido2.total},
-            {"id": pedido3.id, "status": "PRONTO", "numero": 2, "total": pedido3.total},
+            {"id": pedido2.id, "status": "PAGO", "numero": pedido2.numero, "senha_retirada": pedido2.senha_retirada, "total": pedido2.total},
+            {"id": pedido3.id, "status": "PRONTO", "numero": pedido3.numero, "senha_retirada": pedido3.senha_retirada, "total": pedido3.total},
         ],
     }
 
@@ -177,13 +180,17 @@ async def fluxo_completo(db: Session = Depends(get_db)):
         }),
     )
 
-    # 3. Pagar (gera número)
-    numero = gerar_numero_pedido(db)
-    pedido.numero = numero
-    pedido.status = "PAGO"
-    db.commit()
-    db.refresh(pedido)
-    passos.append({"passo": 3, "acao": "pagar", "pedido_id": pedido.id, "status": "PAGO", "numero": numero})
+    # 3. Pagar (gera número + senha de retirada)
+    marcar_pago(db, pedido)
+    numero = pedido.numero
+    passos.append({
+        "passo": 3,
+        "acao": "pagar",
+        "pedido_id": pedido.id,
+        "status": "PAGO",
+        "numero": numero,
+        "senha_retirada": pedido.senha_retirada,
+    })
 
     await manager.send_to_clients(
         ["pwa", "app_mobile"],
@@ -318,11 +325,8 @@ async def fluxo_dois_pedidos(db: Session = Depends(get_db)):
     pedidoA.status = "CONFIRMADO"
     db.commit()
 
-    numeroA = gerar_numero_pedido(db)
-    pedidoA.numero = numeroA
-    pedidoA.status = "PAGO"
-    db.commit()
-    db.refresh(pedidoA)
+    marcar_pago(db, pedidoA)
+    numeroA = pedidoA.numero
 
     # Pronto → notifica painel
     pedidoA.status = "PRONTO"
@@ -347,11 +351,8 @@ async def fluxo_dois_pedidos(db: Session = Depends(get_db)):
     pedidoB.status = "CONFIRMADO"
     db.commit()
 
-    numeroB = gerar_numero_pedido(db)
-    pedidoB.numero = numeroB
-    pedidoB.status = "PAGO"
-    db.commit()
-    db.refresh(pedidoB)
+    marcar_pago(db, pedidoB)
+    numeroB = pedidoB.numero
 
     # Pronto → painel continua exibindo A
     pedidoB.status = "PRONTO"

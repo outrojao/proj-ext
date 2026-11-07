@@ -2,7 +2,7 @@
 Schemas Pydantic para request/response.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 
@@ -14,6 +14,8 @@ class ItemBase(BaseModel):
     descricao: Optional[str] = None
     preco: float
     disponivel: bool = True
+    imagem: Optional[str] = None
+    categoria: Optional[str] = None
 
 
 class ItemCreate(ItemBase):
@@ -23,8 +25,7 @@ class ItemCreate(ItemBase):
 class ItemResponse(ItemBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ── PedidoItem ──
@@ -40,28 +41,38 @@ class PedidoItemResponse(BaseModel):
     quantidade: int
     item: Optional[ItemResponse] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ── Pedido ──
 
 class PedidoCreate(BaseModel):
     itens: List[PedidoItemCreate]
-    horario_agendamento: Optional[str] = None
+    nome_cliente: Optional[str] = Field(
+        None,
+        max_length=40,
+        description="Nome opcional do cliente (para o atendente identificar o pedido)",
+    )
+    horario_agendamento: Optional[str] = Field(
+        None,
+        pattern=r"^([01]\d|2[0-3]):[0-5]\d$",
+        description="Horário no formato HH:MM (ex.: 14:30)",
+    )
 
 
 class PedidoResponse(BaseModel):
     id: int
     numero: Optional[int] = None
+    senha_retirada: Optional[str] = None
+    nome_cliente: Optional[str] = None
     horario_agendamento: Optional[str] = None
     status: str
     origem: str
     total: float
     itens: List[PedidoItemResponse] = []
+    pagamento_declarado_em: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StatusUpdate(BaseModel):

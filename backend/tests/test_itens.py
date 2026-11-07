@@ -20,6 +20,63 @@ def test_criar_item(client, api_headers):
     assert "id" in data
 
 
+def test_criar_item_com_imagem_e_categoria(client, api_headers):
+    """POST /itens com imagem e categoria persiste os dois campos."""
+    response = client.post(
+        "/itens",
+        json={
+            "nome": "X-Burger",
+            "descricao": "Hambúrguer com queijo",
+            "preco": 15.00,
+            "disponivel": True,
+            "imagem": "https://r2.exemplo.com/x-burger.png",
+            "categoria": "Hambúrgueres",
+        },
+        headers=api_headers["pwa"],
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["imagem"] == "https://r2.exemplo.com/x-burger.png"
+    assert data["categoria"] == "Hambúrgueres"
+
+    # Persistiu (não só no response)
+    fetched = client.get(f"/itens/{data['id']}", headers=api_headers["pwa"])
+    assert fetched.json()["imagem"] == "https://r2.exemplo.com/x-burger.png"
+    assert fetched.json()["categoria"] == "Hambúrgueres"
+
+
+def test_atualizar_item_imagem_e_categoria(client, api_headers):
+    """PUT /itens/{id} atualiza imagem e categoria."""
+    create = client.post(
+        "/itens",
+        json={"nome": "X-Burger", "descricao": "Hambúrguer", "preco": 15.00, "disponivel": True},
+        headers=api_headers["pwa"],
+    )
+    item_id = create.json()["id"]
+    assert create.json()["imagem"] is None
+    assert create.json()["categoria"] is None
+
+    response = client.put(
+        f"/itens/{item_id}",
+        json={
+            "nome": "X-Burger",
+            "descricao": "Hambúrguer",
+            "preco": 15.00,
+            "disponivel": True,
+            "imagem": "https://r2.exemplo.com/x-burger.png",
+            "categoria": "Hambúrgueres",
+        },
+        headers=api_headers["pwa"],
+    )
+    assert response.status_code == 200
+    assert response.json()["imagem"] == "https://r2.exemplo.com/x-burger.png"
+    assert response.json()["categoria"] == "Hambúrgueres"
+
+    fetched = client.get(f"/itens/{item_id}", headers=api_headers["pwa"])
+    assert fetched.json()["imagem"] == "https://r2.exemplo.com/x-burger.png"
+    assert fetched.json()["categoria"] == "Hambúrgueres"
+
+
 def test_listar_itens(client, api_headers):
     """GET /itens retorna lista de itens."""
     # Criar um item primeiro

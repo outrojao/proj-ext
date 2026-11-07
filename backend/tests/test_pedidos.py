@@ -44,6 +44,36 @@ def test_criar_pedido(client, api_headers):
     assert len(data["itens"]) == 2
 
 
+def test_criar_pedido_com_nome_cliente(client, api_headers):
+    """POST /pedidos com nome_cliente grava e devolve o nome (opcional)."""
+    itens = _criar_itens(client, api_headers)
+
+    response = client.post(
+        "/pedidos",
+        json={
+            "itens": [{"item_id": itens[0]["id"], "quantidade": 1}],
+            "horario_agendamento": "12:30",
+            "nome_cliente": "João",
+        },
+        headers=api_headers["pwa"],
+    )
+    assert response.status_code == 201
+    assert response.json()["nome_cliente"] == "João"
+
+    # Persistiu
+    fetched = client.get(f"/pedidos/{response.json()['id']}", headers=api_headers["app"])
+    assert fetched.json()["nome_cliente"] == "João"
+
+    # Sem nome → nulo
+    sem_nome = client.post(
+        "/pedidos",
+        json={"itens": [{"item_id": itens[1]["id"], "quantidade": 1}], "horario_agendamento": "12:30"},
+        headers=api_headers["pwa"],
+    )
+    assert sem_nome.status_code == 201
+    assert sem_nome.json()["nome_cliente"] is None
+
+
 def test_criar_pedido_item_inexistente(client, api_headers):
     """POST /pedidos com item_id inválido retorna 400."""
     response = client.post(
@@ -174,7 +204,7 @@ def test_numero_gerado_no_pago(client, api_headers):
     client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "CONFIRMADO"}, headers=api_headers["app"])
 
     # Pagar
-    response = client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "PAGO"}, headers=api_headers["pwa"])
+    response = client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "PAGO"}, headers=api_headers["app"])
     assert response.status_code == 200
     assert response.json()["numero"] is not None
     assert response.json()["numero"] == 1
@@ -205,7 +235,7 @@ def test_numeracao_sequencial(client, api_headers):
         headers=api_headers["pwa"],
     ).json()
     client.patch(f"/pedidos/{p1['id']}/status", json={"novo_status": "CONFIRMADO"}, headers=api_headers["app"])
-    p1_pago = client.patch(f"/pedidos/{p1['id']}/status", json={"novo_status": "PAGO"}, headers=api_headers["pwa"]).json()
+    p1_pago = client.patch(f"/pedidos/{p1['id']}/status", json={"novo_status": "PAGO"}, headers=api_headers["app"]).json()
     assert p1_pago["numero"] == 1
 
     # Pedido 2
@@ -215,7 +245,7 @@ def test_numeracao_sequencial(client, api_headers):
         headers=api_headers["pwa"],
     ).json()
     client.patch(f"/pedidos/{p2['id']}/status", json={"novo_status": "CONFIRMADO"}, headers=api_headers["app"])
-    p2_pago = client.patch(f"/pedidos/{p2['id']}/status", json={"novo_status": "PAGO"}, headers=api_headers["pwa"]).json()
+    p2_pago = client.patch(f"/pedidos/{p2['id']}/status", json={"novo_status": "PAGO"}, headers=api_headers["app"]).json()
     assert p2_pago["numero"] == 2
 
 
@@ -236,7 +266,7 @@ def test_fluxo_completo(client, api_headers):
     assert r.json()["status"] == "CONFIRMADO"
 
     # Pagar
-    r = client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "PAGO"}, headers=api_headers["pwa"])
+    r = client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "PAGO"}, headers=api_headers["app"])
     assert r.json()["status"] == "PAGO"
     assert r.json()["numero"] is not None
 
@@ -275,32 +305,43 @@ def test_fluxo_cancelado_depois_de_pago(client, api_headers):
     pedido_id = create.json()["id"]
 
     client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "CONFIRMADO"}, headers=api_headers["app"])
-    client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "PAGO"}, headers=api_headers["pwa"])
+    client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "PAGO"}, headers=api_headers["app"])
 
     r = client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "CANCELADO"}, headers=api_headers["app"])
     assert r.status_code == 200
     assert r.json()["status"] == "CANCELADO"
 
 
-def test_fila_painel_com_pedido_pronto(client, api_headers):
-    """GET /pedidos/fila-painel retorna pedidos PRONTO após status mudar."""
-    itens = _criar_itens(client, api_headers)
+def _levar_ate_pronto(client, api_headers, item_id):
+    """Cria um pedido e leva até PRONTO. Retorna o id."""
     create = client.post(
         "/pedidos",
-        json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
+        json={"itens": [{"item_id": item_id, "quantidade": 1}], "horario_agendamento": "12:00"},
         headers=api_headers["pwa"],
     )
+    assert create.status_code == 201
     pedido_id = create.json()["id"]
+    for novo in ("CONFIRMADO", "PAGO", "PRONTO"):
+        r = client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": novo}, headers=api_headers["app"])
+        assert r.status_code == 200
+    return pedido_id
 
-    # Levar até PRONTO
-    client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "CONFIRMADO"}, headers=api_headers["app"])
-    client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "PAGO"}, headers=api_headers["pwa"])
-    client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "PRONTO"}, headers=api_headers["app"])
 
-    # Verificar fila do painel
+def test_fila_painel_com_pedido_pronto(client, api_headers):
+    """
+    GET /pedidos/fila-painel retorna pedidos PRONTO aguardando na fila.
+
+    Com o painel livre, o primeiro pedido PRONTO é imediatamente EXIBINDO;
+    o segundo fica AGUARDANDO e é ele que aparece na fila.
+    """
+    itens = _criar_itens(client, api_headers)
+    primeiro = _levar_ate_pronto(client, api_headers, itens[0]["id"])
+    segundo = _levar_ate_pronto(client, api_headers, itens[1]["id"])
+
     response = client.get("/pedidos/fila-painel", headers=api_headers["esp32"])
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
+    assert data[0]["id"] == segundo
     assert data[0]["status"] == "PRONTO"
     assert data[0]["numero"] is not None

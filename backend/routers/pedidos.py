@@ -14,10 +14,11 @@ Regras:
 
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, text
+from sqlalchemy import or_
 
+from auth import tipo_cliente
 from database import get_db
 from models import Pedido, PedidoItem, Item
 from painel_service import (
@@ -25,6 +26,7 @@ from painel_service import (
     finalizar_exibicao,
     preparar_pedido_pronto,
 )
+from pedidos_service import marcar_pago
 from schemas import PedidoCreate, PedidoResponse, StatusUpdate, NumeroResponse
 from websocket_manager import manager, websocket_event
 
@@ -39,13 +41,6 @@ TRANSICOES_VALIDAS = {
     "ENTREGUE": set(),
     "CANCELADO": set(),
 }
-
-
-def gerar_numero_pedido(db: Session) -> int:
-    """Obtém o próximo número de pedido da sequence."""
-    return db.execute(
-        text("SELECT nextval('pedido_numero_seq')")
-    ).scalar_one()
 
 
 def calcular_total(db: Session, itens: list[PedidoItem]) -> float:
@@ -75,21 +70,18 @@ async def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
     # Criar pedido
     db_pedido = Pedido(
         horario_agendamento=pedido.horario_agendamento,
+        nome_cliente=pedido.nome_cliente,
         status="PENDENTE",
         origem="PWA",
         total=0.0,
     )
     db.add(db_pedido)
-    db.flush()  # Para obter o ID
 
-    # Criar itens do pedido
+    # Criar itens do pedido (via relationship para o cálculo do total)
     for pi in pedido.itens:
-        db_pedido_item = PedidoItem(
-            pedido_id=db_pedido.id,
-            item_id=pi.item_id,
-            quantidade=pi.quantidade,
+        db_pedido.itens.append(
+            PedidoItem(item_id=pi.item_id, quantidade=pi.quantidade)
         )
-        db.add(db_pedido_item)
 
     # Calcular total
     db_pedido.total = calcular_total(db, db_pedido.itens)
@@ -124,7 +116,8 @@ def listar_pendentes(db: Session = Depends(get_db)):
 @router.get("/fila-painel", response_model=list[PedidoResponse])
 def fila_painel(db: Session = Depends(get_db)):
     """
-    Retorna pedidos com status PRONTO e origem PWA, ordenados por número.
+    Retorna pedidos com status PRONTO e origem PWA aguardando na fila,
+    ordenados pela posição na fila (menor primeiro).
     Usado pelo ESP32 para sincronizar ao reconectar.
     """
     return (
@@ -137,7 +130,10 @@ def fila_painel(db: Session = Depends(get_db)):
                 Pedido.painel_status.is_(None),
             ),
         )
-        .order_by(Pedido.numero)
+        .order_by(
+            Pedido.painel_fila_posicao.asc().nulls_last(),
+            Pedido.numero,
+        )
         .all()
     )
 
@@ -166,13 +162,15 @@ def obter_numero(pedido_id: int, db: Session = Depends(get_db)):
 async def atualizar_status(
     pedido_id: int,
     status_update: StatusUpdate,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """
     Atualiza o status de um pedido.
 
     Regras:
-    - PAGO: gera número sequencial (não notifica painel)
+    - PAGO: apenas com a chave do App Mobile (403 para a PWA);
+      gera número sequencial + senha de retirada (não notifica painel)
     - PRONTO: notifica painel LCD (ESP32) — pedido_pronto
     - ENTREGUE: notifica painel LCD (ESP32) — pedido_entregue (próximo da fila)
     - Qualquer mudança: notifica PWA + App Mobile — status_atualizado
@@ -191,14 +189,19 @@ async def atualizar_status(
             detail=f"Transição inválida: {status_atual} → {novo_status}",
         )
 
-    pedido.status = novo_status
+    # Guard: apenas o App Mobile pode confirmar o pagamento
+    if novo_status == "PAGO" and tipo_cliente(request.headers.get("X-API-Key")) == "pwa":
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o App Mobile pode marcar o pedido como PAGO",
+        )
 
-    # Se virou PAGO, gerar número sequencial
-    if novo_status == "PAGO" and pedido.numero is None:
-        pedido.numero = gerar_numero_pedido(db)
-
-    db.commit()
-    db.refresh(pedido)
+    if novo_status == "PAGO":
+        marcar_pago(db, pedido)
+    else:
+        pedido.status = novo_status
+        db.commit()
+        db.refresh(pedido)
 
     # Notificar PWA + App Mobile: status atualizado
     await manager.send_to_clients(

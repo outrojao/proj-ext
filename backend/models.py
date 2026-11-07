@@ -16,6 +16,8 @@ class Item(Base):
     descricao = Column(String, nullable=True)
     preco = Column(Numeric(10, 2), nullable=False)
     disponivel = Column(Boolean, default=True)
+    imagem = Column(String, nullable=True)
+    categoria = Column(String, nullable=True)
 
     pedido_itens = relationship("PedidoItem", back_populates="item")
 
@@ -25,6 +27,8 @@ class Pedido(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     numero = Column(Integer, nullable=True, index=True)  # Gerado quando status vira PAGO
+    senha_retirada = Column(String(4), unique=True, nullable=True)  # Gerada quando status vira PAGO
+    nome_cliente = Column(String(40), nullable=True)  # Nome opcional informado na PWA cliente
     horario_agendamento = Column(String, nullable=True)
     status = Column(String, default="PENDENTE", nullable=False)
     origem = Column(String, default="PWA", nullable=False)  # Sempre "PWA" neste fluxo
@@ -33,6 +37,8 @@ class Pedido(Base):
     painel_exibido_em = Column(DateTime, nullable=True)
     painel_expirado_em = Column(DateTime, nullable=True)
     painel_entregue_em = Column(DateTime, nullable=True)
+    painel_fila_posicao = Column(Integer, nullable=True)  # Posição na fila do painel (fim da fila = maior)
+    pagamento_declarado_em = Column(DateTime, nullable=True)  # "Já paguei" da PWA (persiste p/ sync offline)
 
     itens = relationship("PedidoItem", back_populates="pedido", cascade="all, delete-orphan")
 

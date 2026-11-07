@@ -29,6 +29,8 @@ def criar_item(item: ItemCreate, db: Session = Depends(get_db)):
         descricao=item.descricao,
         preco=item.preco,
         disponivel=item.disponivel,
+        imagem=item.imagem,
+        categoria=item.categoria,
     )
     db.add(db_item)
     db.commit()
@@ -55,6 +57,8 @@ def atualizar_item(item_id: int, item: ItemCreate, db: Session = Depends(get_db)
     db_item.descricao = item.descricao
     db_item.preco = item.preco
     db_item.disponivel = item.disponivel
+    db_item.imagem = item.imagem
+    db_item.categoria = item.categoria
     db.commit()
     db.refresh(db_item)
     return db_item

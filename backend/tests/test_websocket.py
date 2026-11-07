@@ -136,7 +136,7 @@ def test_ws_pedido_pronto_notifica_esp32(client, api_headers):
         ws_app.receive_text()
 
         # Pagar
-        client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "PAGO"}, headers=api_headers["pwa"])
+        client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "PAGO"}, headers=api_headers["app"])
         ws_app.receive_text()
 
         # Pronto
@@ -174,7 +174,7 @@ def test_ws_pedido_entregue_notifica_esp32(client, api_headers):
         ws_app.receive_text()  # novo_pedido
         client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "CONFIRMADO"}, headers=api_headers["app"])
         ws_app.receive_text()  # status_atualizado CONFIRMADO
-        client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "PAGO"}, headers=api_headers["pwa"])
+        client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "PAGO"}, headers=api_headers["app"])
         ws_app.receive_text()  # status_atualizado PAGO
         client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "PRONTO"}, headers=api_headers["app"])
         ws_app.receive_text()  # status_atualizado PRONTO

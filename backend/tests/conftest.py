@@ -12,22 +12,22 @@ from pathlib import Path
 # Adicionar o diretório do backend ao path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# ── Configurar variáveis de ambiente para testes (antes de importar o app) ──
+os.environ["API_KEY_PWA"] = "test-key-pwa"
+os.environ["API_KEY_APP"] = "test-key-app"
+os.environ["API_KEY_ESP32"] = "test-key-esp32"
+os.environ.setdefault("PIX_CHAVE", "pix@dominio-teste.com.br")
+os.environ.setdefault("PIX_NOME", "Loja Teste")
+os.environ.setdefault("PIX_CIDADE", "Sao Paulo")
+
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from main import app
 from database import get_db, Base
 from models import Item
-
-# ── Configurar variáveis de ambiente para testes ──
-os.environ["API_KEY_PWA"] = "test-key-pwa"
-os.environ["API_KEY_APP"] = "test-key-app"
-os.environ["API_KEY_ESP32"] = "test-key-esp32"
-
-# Recarregar API_KEYS no app
-from main import app as _app
 
 
 # ── Banco PostgreSQL de teste ──
@@ -56,6 +56,20 @@ def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 
+def _preparar_banco_de_teste():
+    """
+    Cria as tabelas (se não existirem) e reseta a sequence de numeração.
+
+    A sequence `pedido_numero_seq` é criada pela migration 0001 (não faz
+    parte do metadata do SQLAlchemy), então os testes a criam/resetam
+    para garantir que o primeiro número pago seja sempre 1.
+    """
+    Base.metadata.create_all(bind=test_engine)
+    with test_engine.begin() as conn:
+        conn.execute(text("DROP SEQUENCE IF EXISTS pedido_numero_seq"))
+        conn.execute(text("CREATE SEQUENCE pedido_numero_seq START WITH 1"))
+
+
 # ── Fixtures ──
 
 @pytest.fixture(scope="function")
@@ -64,7 +78,7 @@ def client():
     Cliente de teste com banco limpo para cada teste.
     Cria as tabelas antes e dropa depois.
     """
-    Base.metadata.create_all(bind=test_engine)
+    _preparar_banco_de_teste()
     yield TestClient(app)
     Base.metadata.drop_all(bind=test_engine)
 
@@ -74,7 +88,7 @@ def db_session():
     """
     Sessão direta do banco de teste (para assertions nos testes).
     """
-    Base.metadata.create_all(bind=test_engine)
+    _preparar_banco_de_teste()
     session = TestSessionLocal()
     try:
         yield session
