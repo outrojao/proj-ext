@@ -73,7 +73,6 @@ def health_check():
 app.include_router(itens.router)
 app.include_router(pedidos.router)
 app.include_router(pagamentos.router)  # Pagamento Pix + declaração de pagamento
-app.include_router(test_mock.router)  # Rotas de teste com dados mockados
 
 
 # ── WebSocket Endpoint ──
