@@ -15,7 +15,7 @@ from starlette.responses import JSONResponse
 
 from auth import API_KEYS, tipo_cliente
 from websocket_manager import manager, CLIENT_TYPES, websocket_event
-from routers import itens, pedidos, pagamentos, test_mock
+from routers import itens, pedidos, pagamentos
 from database import SessionLocal
 from painel_service import (
     evento_pedido,
