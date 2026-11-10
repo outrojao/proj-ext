@@ -42,6 +42,7 @@ def evento_pedido(event: str, pedido: Pedido) -> dict:
     return websocket_event(event, {
             "pedido_id": pedido.id,
             "numero": pedido.numero,
+            "nome_cliente": pedido.nome_cliente,
         })
 
 
