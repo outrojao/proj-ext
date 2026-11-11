@@ -133,10 +133,14 @@ def _tempo_exibicao_excedido(pedido: Pedido) -> bool:
     if exibido_em is None:
         return False
 
-    if exibido_em.tzinfo is None:
-        exibido_em = exibido_em.replace(tzinfo=UTC)
-
-    return datetime.now(UTC) - exibido_em >= timeout_exibicao()
+    agora = db.scalar(select(func.now()))
+    if agora is None:
+        return False
+    if agora.tzinfo is not None:
+        agora = agora.replace(tzinfo=None)
+    if exibido_em.tzinfo is not None:
+        exibido_em = exibido_em.replace(tzinfo=None)
+    return (agora - exibido_em) >= timeout_exibicao()
 
 def expirar_exibicao(db: Session, pedido_id: int) -> Pedido | None:
     """
