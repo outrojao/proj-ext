@@ -13,7 +13,7 @@ import asyncio
 import os
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from database import SessionLocal
@@ -127,7 +127,7 @@ def preparar_pedido_pronto(db: Session, pedido: Pedido) -> Pedido | None:
 
     return iniciar_proximo_pedido(db)
 
-def _tempo_exibicao_excedido(pedido: Pedido) -> bool:
+def _tempo_exibicao_excedido(db: Session, pedido: Pedido) -> bool:
     exibido_em = pedido.painel_exibido_em
 
     if exibido_em is None:
@@ -161,7 +161,7 @@ def expirar_exibicao(db: Session, pedido_id: int) -> Pedido | None:
         )
         .first()
     )
-    if exibindo is None or not _tempo_exibicao_excedido(exibindo):
+    if exibindo is None or not _tempo_exibicao_excedido(db, exibindo):
         return None
 
     if proximo_pedido(db) is None:
