@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#bf2431">
+  <meta name="description" content="Faça seu pedido, agende o horário de hoje e pague com Pix.">
+  <title>Lanchonete — Pedidos</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/vendor/qrcode-generator.js" defer></script>
+</head>
+<body>
+  <a class="pular" href="#main">Pular para o conteúdo</a>
+
+  <div id="banner-offline" class="banner banner-offline" role="status" hidden>
+    Você está offline — suas informações continuam salvas.
+  </div>
+  <div id="banner-demo" class="banner banner-demo" hidden>MODO DEMO</div>
+  <div id="banner-restore" class="banner banner-restore" role="status" hidden>
+    <span>Restauramos seu pedido — continue de onde parou.</span>
+    <button id="btn-novo-pedido-topo" class="btn-suave btn-mini" type="button">Começar de novo</button>
+  </div>
+  <div id="banner-instalacao" class="banner banner-instalacao" hidden>
+    <span>Instale o app e peça em 2 toques.</span>
+    <span class="banner-acoes">
+      <button id="btn-instalar" class="btn-primario btn-mini" type="button">Instalar</button>
+      <button id="btn-fechar-instalacao" class="btn-suave btn-mini" type="button" aria-label="Fechar aviso de instalação">Fechar</button>
+    </span>
+  </div>
+
+  <header class="topo">
+    <img class="logo" src="assets/logo.svg" alt="">
+    <span id="app-nome-loja" class="nome-loja">Lanchonete</span>
+    <span id="chip-status-loja" class="chip-loja" hidden></span>
+    <button id="btn-meu-pedido" class="link-pedido" type="button" hidden>Meu pedido</button>
+  </header>
+  <main id="main">
+    <!-- ── CARDAPIO ── -->
+    <section data-view="cardapio" class="view" aria-labelledby="titulo-cardapio">
+      <div class="view-cabecalho">
+        <h1 id="titulo-cardapio" tabindex="-1">Cardápio</h1>
+        <button id="btn-atualizar-cardapio" class="btn-suave btn-mini" type="button">Atualizar</button>
+      </div>
+      <div id="cardapio-skeleton" class="skeleton-caixa" hidden>
+        <p class="skeleton-msg">Carregando cardápio…</p>
+      </div>
+      <div id="cardapio-erro" class="estado" hidden>
+        <p>Não foi possível carregar o cardápio.</p>
+        <button id="btn-tentar-cardapio" class="btn-primario" type="button">Tentar novamente</button>
+      </div>
+      <div id="cardapio-vazio" class="estado" hidden>
+        <p>Cardápio em atualização, volte em instantes.</p>
+      </div>
+      <div id="lista-itens" class="lista-itens"></div>
+    </section>
+
+    <!-- ── AGENDAMENTO ── -->
+    <section data-view="agendamento" class="view" hidden aria-labelledby="titulo-agendamento">
+      <div class="view-cabecalho">
+        <h1 id="titulo-agendamento" tabindex="-1">Agendar pedido</h1>
+        <button id="btn-voltar-cardapio" class="btn-suave btn-mini" type="button">← Voltar</button>
+      </div>
+      <h2 class="titulo-bloco">Seu carrinho</h2>
+      <ul id="resumo-carrinho" class="resumo-carrinho" role="list"></ul>
+      <h2 class="titulo-bloco">Escolha o horário (hoje)</h2>
+      <div id="slots" class="slots" role="group" aria-label="Horários disponíveis hoje"></div>
+      <p id="slots-vazio" class="estado" hidden>Agendamento encerrado para hoje. Volte amanhã!</p>
+      <div class="campo">
+        <label for="input-nome">Nome para o pedido (opcional)</label>
+        <input id="input-nome" type="text" maxlength="40" autocomplete="off" placeholder="Como devemos te chamar?">
+      </div>
+    </section>
+
+    <!-- ── AGUARDANDO CONFIRMAÇÃO ── -->
+    <section data-view="aguardando_confirmacao" class="view" hidden aria-labelledby="titulo-aguardando">
+      <div id="aguardando-espera">
+        <h1 id="titulo-aguardando" tabindex="-1">Aguardando confirmação</h1>
+        <div class="aguardando-centro">
+          <img
+            class="aguardando-imagem"
+            src="assets/aguardando-confirmacao.svg"
+            alt="Ilustração: relógio e selo Pix — seu pedido aguarda a confirmação da loja para gerar o pagamento"
+            width="180"
+            height="162"
+          >
+          <p class="texto-suave">Assim que a loja confirmar, o pagamento Pix será gerado para você.</p>
+          <span class="spinner" aria-hidden="true"></span>
+          <p id="aguardando-mensagem" class="texto-centro">Seu pedido está sendo conferido pela loja…</p>
+          <p id="aguardando-cronometro" class="cronometro">00:00</p>
+          <p id="aguardando-status" class="status-vivo">Aguardando confirmação da loja.</p>
+          <p id="aguardando-dica" class="texto-suave" hidden>
+            Ainda estamos confirmando. Você pode ficar nesta página ou sair — a sessão fica salva por 5 min de inatividade.
+          </p>
+        </div>
+      </div>
+      <div id="aguardando-cancelado" class="estado estado-centro" hidden>
+        <h1 tabindex="-1">Pedido cancelado</h1>
+        <p>Seu pedido não pôde ser confirmado.</p>
+        <button id="btn-novo-pedido" class="btn-primario" type="button">Fazer novo pedido</button>
+      </div>
+    </section>
+
+    <!-- ── PAGAMENTO (PIX) ── -->
+    <section data-view="pagamento" class="view" hidden aria-labelledby="titulo-pagamento">
+      <h1 id="titulo-pagamento" tabindex="-1">Pagamento</h1>
+      <p id="pagamento-total" class="pagamento-total"></p>
+      <div id="pagamento-gerando" class="estado estado-centro" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <p>Gerando QR Code…</p>
+      </div>
+      <div id="pagamento-qrcode" class="qr-caixa">
+        <span class="qr-selo" aria-hidden="true">PIX</span>
+        <img id="pagamento-qr" class="qr-imagem" src="" alt="">
+        <label class="sr-only" for="pagamento-copia-cola">Código Pix copia e cola</label>
+        <input id="pagamento-copia-cola" class="copia-cola" type="text" readonly inputmode="none" aria-describedby="pagamento-dica">
+        <button id="btn-copiar-pix" class="btn-primario" type="button">Copiar</button>
+        <p id="pagamento-dica" class="texto-suave">Cole o código no app do seu banco.</p>
+      </div>
+      <div id="pagamento-expirado" class="estado estado-centro" hidden>
+        <p>QR Code expirou.</p>
+        <button id="btn-novo-qr" class="btn-primario" type="button">Gerar novo QR</button>
+        <button id="btn-novo-pedido-pagamento" class="btn-suave" type="button">Começar novo pedido</button>
+      </div>
+      <p id="pagamento-cronometro" class="cronometro">Aguardando pagamento… 00:00</p>
+      <p id="pagamento-status" class="status-vivo">Aguardando pagamento.</p>
+      <button id="btn-ja-paguei" class="btn-suave" type="button">Já paguei</button>
+    </section>
+
+    <!-- ── CONFIRMAÇÃO ── -->
+    <section data-view="confirmacao" class="view" hidden aria-labelledby="titulo-confirmacao">
+      <h1 id="titulo-confirmacao" tabindex="-1">Pagamento confirmado!</h1>
+      <div class="confirmacao-centro">
+        <p class="texto-centro texto-suave">Seu número de pedido</p>
+        <p id="confirmacao-numero" class="numero-gigante">—</p>
+        <p class="texto-centro texto-suave">Sua senha de retirada</p>
+        <p id="confirmacao-senha" class="senha-caixa" aria-hidden="true"></p>
+        <p id="confirmacao-senha-sr" class="sr-only"></p>
+        <div class="acoes-linha">
+          <button id="btn-copiar-numero" class="btn-primario" type="button">Copiar número</button>
+          <button id="btn-copiar-senha" class="btn-primario" type="button">Copiar senha</button>
+        </div>
+        <p class="texto-centro">Apresente o número e a senha para o atendente na hora de retirar.</p>
+        <button id="btn-acompanhar" class="btn-primario" type="button">Acompanhar pedido</button>
+      </div>
+    </section>
+
+    <!-- ── ACOMPANHAMENTO ── -->
+    <section data-view="acompanhamento" class="view" hidden aria-labelledby="titulo-acompanhamento">
+      <h1 id="titulo-acompanhamento" tabindex="-1">Meu pedido</h1>
+      <div id="acompanhamento-identificacao" class="identificacao">
+        <div class="identificacao-par">
+          <span class="texto-suave">Número</span>
+          <strong id="acom-numero">—</strong>
+        </div>
+        <div class="identificacao-par">
+          <span class="texto-suave">Senha</span>
+          <strong id="acom-senha">—</strong>
+        </div>
+        <button id="btn-copiar-identificacao" class="btn-suave btn-mini" type="button">Copiar</button>
+      </div>
+      <ol id="timeline" class="timeline" role="list">
+        <li data-passo="0">Confirmando</li>
+        <li data-passo="1">Pago</li>
+        <li data-passo="2">Em preparo</li>
+        <li data-passo="3">Pronto</li>
+        <li data-passo="4">Entregue</li>
+      </ol>
+      <p id="acompanhamento-status" class="status-vivo"></p>
+      <div id="acompanhamento-fim" class="estado estado-centro" hidden>
+        <p>Pedido entregue. Obrigado!</p>
+        <button id="btn-entregue-novo" class="btn-primario" type="button">Fazer novo pedido</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="barra-inferior" class="barra-inferior" hidden>
+    <div class="barra-total">
+      <span class="texto-suave">Total</span>
+      <strong id="barra-total">R$ 0,00</strong>
+    </div>
+    <button id="barra-cta" class="btn-primario cta" type="button" disabled>Continuar</button>
+  </div>
+
+  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
