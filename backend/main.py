@@ -47,6 +47,8 @@ async def verify_api_key(request: Request, call_next):
     """
     # Rotas públicas (não exigem API key)
     public_paths = ["/health", "/docs", "/openapi.json", "/redoc", "/test"]
+    if request.method == "OPTIONS":
+        return await call_next(request)
     path = request.url.path
 
     # WebSocket connections são validadas no próprio endpoint
