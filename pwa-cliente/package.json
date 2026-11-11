@@ -1,0 +1,6 @@
+{
+  "name": "pwa-cliente",
+  "private": true,
+  "type": "module",
+  "description": "PWA do cliente (Sistema de Pedidos). Testes: node --test testes/"
+}

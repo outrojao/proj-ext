@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" role="img" aria-labelledby="titulo-img-aguardando">
+  <title id="titulo-img-aguardando">Relógio com selo Pix: pedido aguardando confirmação da loja para gerar o pagamento</title>
+  <circle cx="95" cy="90" r="82" fill="#fbe3bc"/>
+  <circle cx="85" cy="88" r="54" fill="#ffffff" stroke="#400101" stroke-width="6"/>
+  <line x1="85" y1="41" x2="85" y2="49" stroke="#400101" stroke-width="5" stroke-linecap="round"/>
+  <line x1="85" y1="127" x2="85" y2="135" stroke="#400101" stroke-width="5" stroke-linecap="round"/>
+  <line x1="39" y1="88" x2="47" y2="88" stroke="#400101" stroke-width="5" stroke-linecap="round"/>
+  <line x1="123" y1="88" x2="131" y2="88" stroke="#400101" stroke-width="5" stroke-linecap="round"/>
+  <line x1="85" y1="88" x2="85" y2="54" stroke="#bf2431" stroke-width="7" stroke-linecap="round"/>
+  <line x1="85" y1="88" x2="106" y2="100" stroke="#400101" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="85" cy="88" r="5" fill="#400101"/>
+  <g transform="rotate(45 152 132)">
+    <rect x="124" y="104" width="56" height="56" rx="14" fill="#bf2431"/>
+    <rect x="139" y="119" width="26" height="26" rx="5" fill="#ffffff"/>
+  </g>
+</svg>
