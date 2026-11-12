@@ -98,7 +98,7 @@ async def declarar_pagamento(pedido_id: int, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(pedido)
     await manager.send_to_client(
-        "app_mobile",
+        "pwa_admin",
         websocket_event("pagamento_declarado", {"pedido_id": pedido.id}),
     )
     return {

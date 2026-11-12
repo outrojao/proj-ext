@@ -14,15 +14,15 @@ def _criar_itens(client, api_headers):
         resp = client.post(
             "/itens",
             json={"nome": nome, "descricao": f"Descrição {nome}", "preco": preco, "disponivel": True},
-            headers=api_headers["pwa"],
+            headers=api_headers["pwa_cliente"],
         )
         itens.append(resp.json())
     return itens
 
 
 def test_ws_conexao_valida(client):
-    """WebSocket conecta com API key válida (app_mobile)."""
-    with client.websocket_connect("/ws/app_mobile?api_key=test-key-app") as ws:
+    """WebSocket conecta com API key válida (pwa_admin)."""
+    with client.websocket_connect("/ws/pwa_admin?api_key=test-key-app") as ws:
         # Se conectou sem erro, o teste passa
         # Envia uma mensagem para manter a conexão ativa
         ws.send_text("ping")
@@ -31,14 +31,14 @@ def test_ws_conexao_valida(client):
 def test_ws_conexao_sem_key(client):
     """WebSocket recusa conexão sem API key."""
     with pytest.raises(Exception):
-        with client.websocket_connect("/ws/app_mobile") as ws:
+        with client.websocket_connect("/ws/pwa_admin") as ws:
             ws.send_text("ping")
 
 
 def test_ws_conexao_key_invalida(client):
     """WebSocket recusa conexão com API key errada."""
     with pytest.raises(Exception):
-        with client.websocket_connect("/ws/app_mobile?api_key=chave-errada") as ws:
+        with client.websocket_connect("/ws/pwa_admin?api_key=chave-errada") as ws:
             ws.send_text("ping")
 
 
@@ -53,12 +53,12 @@ def test_ws_novo_pedido_notifica_app(client, api_headers):
     """Criar um pedido notifica o App Mobile via WebSocket (novo_pedido)."""
     itens = _criar_itens(client, api_headers)
 
-    with client.websocket_connect("/ws/app_mobile?api_key=test-key-app") as ws_app:
+    with client.websocket_connect("/ws/pwa_admin?api_key=test-key-app") as ws_app:
         # Criar pedido
         response = client.post(
             "/pedidos",
             json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
-            headers=api_headers["pwa"],
+            headers=api_headers["pwa_cliente"],
         )
         assert response.status_code == 201
 
@@ -75,13 +75,13 @@ def test_ws_status_atualizado_notifica_pwa_e_app(client, api_headers):
     itens = _criar_itens(client, api_headers)
 
     with client.websocket_connect("/ws/pwa?api_key=test-key-pwa") as ws_pwa, \
-         client.websocket_connect("/ws/app_mobile?api_key=test-key-app") as ws_app:
+         client.websocket_connect("/ws/pwa_admin?api_key=test-key-app") as ws_app:
 
         # Criar pedido
         create = client.post(
             "/pedidos",
             json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
-            headers=api_headers["pwa"],
+            headers=api_headers["pwa_cliente"],
         ).json()
         pedido_id = create["id"]
 
@@ -113,7 +113,7 @@ def test_ws_pedido_pronto_notifica_esp32(client, api_headers):
     itens = _criar_itens(client, api_headers)
 
     with client.websocket_connect("/ws/esp32?api_key=test-key-esp32") as ws_esp32, \
-         client.websocket_connect("/ws/app_mobile?api_key=test-key-app") as ws_app:
+         client.websocket_connect("/ws/pwa_admin?api_key=test-key-app") as ws_app:
         # Sincronização inicial do painel sem pedidos prontos.
         initial = json.loads(ws_esp32.receive_text())
         assert initial["event"] == "fila_vazia"
@@ -122,7 +122,7 @@ def test_ws_pedido_pronto_notifica_esp32(client, api_headers):
         create = client.post(
             "/pedidos",
             json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
-            headers=api_headers["pwa"],
+            headers=api_headers["pwa_cliente"],
         ).json()
         pedido_id = create["id"]
 
@@ -157,7 +157,7 @@ def test_ws_pedido_entregue_notifica_esp32(client, api_headers):
     itens = _criar_itens(client, api_headers)
 
     with client.websocket_connect("/ws/esp32?api_key=test-key-esp32") as ws_esp32, \
-         client.websocket_connect("/ws/app_mobile?api_key=test-key-app") as ws_app:
+         client.websocket_connect("/ws/pwa_admin?api_key=test-key-app") as ws_app:
         # Sincronização inicial do painel sem pedidos prontos.
         initial = json.loads(ws_esp32.receive_text())
         assert initial["event"] == "fila_vazia"
@@ -166,7 +166,7 @@ def test_ws_pedido_entregue_notifica_esp32(client, api_headers):
         create = client.post(
             "/pedidos",
             json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
-            headers=api_headers["pwa"],
+            headers=api_headers["pwa_cliente"],
         ).json()
         pedido_id = create["id"]
 

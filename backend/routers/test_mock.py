@@ -54,7 +54,7 @@ def seed(db: Session = Depends(get_db)):
         itens_criados.append({"id": item.id, "nome": item.nome, "preco": item.preco})
 
     # Pedido 1: PENDENTE (aguardando confirmação)
-    pedido1 = Pedido(horario_agendamento="12:30", status="PENDENTE", origem="PWA", total=0.0)
+    pedido1 = Pedido(horario_agendamento="12:30", status="PENDENTE", origem="PWA_CLIENTE", total=0.0)
     db.add(pedido1)
     db.flush()
     db.add(PedidoItem(pedido_id=pedido1.id, item_id=itens_criados[0]["id"], quantidade=2))
@@ -62,7 +62,7 @@ def seed(db: Session = Depends(get_db)):
     pedido1.total = 2 * 15.00 + 1 * 6.00  # 2x X-Burger + 1x Refrigerante = 36.00
 
     # Pedido 2: PAGO (número + senha de retirada gerados, cozinha imprimindo)
-    pedido2 = Pedido(horario_agendamento="13:00", status="CONFIRMADO", origem="PWA", total=0.0)
+    pedido2 = Pedido(horario_agendamento="13:00", status="CONFIRMADO", origem="PWA_CLIENTE", total=0.0)
     db.add(pedido2)
     db.flush()
     db.add(PedidoItem(pedido_id=pedido2.id, item_id=itens_criados[0]["id"], quantidade=1))
@@ -71,7 +71,7 @@ def seed(db: Session = Depends(get_db)):
     marcar_pago(db, pedido2)
 
     # Pedido 3: PRONTO (no painel LCD)
-    pedido3 = Pedido(horario_agendamento="12:45", status="CONFIRMADO", origem="PWA", total=0.0)
+    pedido3 = Pedido(horario_agendamento="12:45", status="CONFIRMADO", origem="PWA_CLIENTE", total=0.0)
     db.add(pedido3)
     db.flush()
     db.add(PedidoItem(pedido_id=pedido3.id, item_id=itens_criados[1]["id"], quantidade=1))
@@ -146,7 +146,7 @@ async def fluxo_completo(db: Session = Depends(get_db)):
         return {"erro": "Nenhum item no cardápio. Execute POST /test/seed primeiro."}
 
     # 1. Criar pedido
-    pedido = Pedido(horario_agendamento="14:00", status="PENDENTE", origem="PWA", total=0.0)
+    pedido = Pedido(horario_agendamento="14:00", status="PENDENTE", origem="PWA_CLIENTE", total=0.0)
     db.add(pedido)
     db.flush()
     db.add(PedidoItem(pedido_id=pedido.id, item_id=item.id, quantidade=2))
@@ -158,7 +158,7 @@ async def fluxo_completo(db: Session = Depends(get_db)):
 
     # Notificar App Mobile
     await manager.send_to_client(
-        "app_mobile",
+        "pwa_admin",
         websocket_event("novo_pedido", {
             "pedido_id": pedido.id,
             "status": "PENDENTE",
@@ -172,7 +172,7 @@ async def fluxo_completo(db: Session = Depends(get_db)):
     passos.append({"passo": 2, "acao": "confirmar", "pedido_id": pedido.id, "status": "CONFIRMADO", "numero": None})
 
     await manager.send_to_clients(
-        ["pwa", "app_mobile"],
+        ["pwa_cliente", "pwa_admin"],
         websocket_event("status_atualizado", {
             "pedido_id": pedido.id,
             "status": "CONFIRMADO",
@@ -193,7 +193,7 @@ async def fluxo_completo(db: Session = Depends(get_db)):
     })
 
     await manager.send_to_clients(
-        ["pwa", "app_mobile"],
+        ["pwa_cliente", "pwa_admin"],
         websocket_event("status_atualizado", {
             "pedido_id": pedido.id,
             "status": "PAGO",
@@ -208,7 +208,7 @@ async def fluxo_completo(db: Session = Depends(get_db)):
     passos.append({"passo": 4, "acao": "pronto", "pedido_id": pedido.id, "status": "PRONTO", "numero": numero})
 
     await manager.send_to_clients(
-        ["pwa", "app_mobile"],
+        ["pwa_cliente", "pwa_admin"],
         websocket_event("status_atualizado", {
             "pedido_id": pedido.id,
             "status": "PRONTO",
@@ -227,7 +227,7 @@ async def fluxo_completo(db: Session = Depends(get_db)):
     passos.append({"passo": 5, "acao": "entregar", "pedido_id": pedido.id, "status": "ENTREGUE", "numero": numero})
 
     await manager.send_to_clients(
-        ["pwa", "app_mobile"],
+        ["pwa_cliente", "pwa_admin"],
         websocket_event("status_atualizado", {
             "pedido_id": pedido.id,
             "status": "ENTREGUE",
@@ -258,7 +258,7 @@ async def fluxo_rejeitado(db: Session = Depends(get_db)):
         return {"erro": "Nenhum item no cardápio. Execute POST /test/seed primeiro."}
 
     # Criar pedido
-    pedido = Pedido(horario_agendamento="15:00", status="PENDENTE", origem="PWA", total=0.0)
+    pedido = Pedido(horario_agendamento="15:00", status="PENDENTE", origem="PWA_CLIENTE", total=0.0)
     db.add(pedido)
     db.flush()
     db.add(PedidoItem(pedido_id=pedido.id, item_id=item.id, quantidade=1))
@@ -268,7 +268,7 @@ async def fluxo_rejeitado(db: Session = Depends(get_db)):
 
     # Notificar App Mobile
     await manager.send_to_client(
-        "app_mobile",
+        "pwa_admin",
         websocket_event("novo_pedido", {
             "pedido_id": pedido.id,
             "status": "PENDENTE",
@@ -282,7 +282,7 @@ async def fluxo_rejeitado(db: Session = Depends(get_db)):
 
     # Notificar PWA
     await manager.send_to_clients(
-        ["pwa", "app_mobile"],
+        ["pwa_cliente", "pwa_admin"],
         websocket_event("status_atualizado", {
             "pedido_id": pedido.id,
             "status": "CANCELADO",
@@ -313,7 +313,7 @@ async def fluxo_dois_pedidos(db: Session = Depends(get_db)):
     passos = []
 
     # ── Pedido A ──
-    pedidoA = Pedido(horario_agendamento="16:00", status="PENDENTE", origem="PWA", total=0.0)
+    pedidoA = Pedido(horario_agendamento="16:00", status="PENDENTE", origem="PWA_CLIENTE", total=0.0)
     db.add(pedidoA)
     db.flush()
     db.add(PedidoItem(pedido_id=pedidoA.id, item_id=item.id, quantidade=1))
@@ -339,7 +339,7 @@ async def fluxo_dois_pedidos(db: Session = Depends(get_db)):
     passos.append({"pedido": "A", "numero": numeroA, "status": "PRONTO", "painel_exibe": f"#{numeroA:03d}"})
 
     # ── Pedido B ──
-    pedidoB = Pedido(horario_agendamento="16:15", status="PENDENTE", origem="PWA", total=0.0)
+    pedidoB = Pedido(horario_agendamento="16:15", status="PENDENTE", origem="PWA_CLIENTE", total=0.0)
     db.add(pedidoB)
     db.flush()
     db.add(PedidoItem(pedido_id=pedidoB.id, item_id=item.id, quantidade=2))

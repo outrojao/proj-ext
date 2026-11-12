@@ -10,7 +10,7 @@ def test_criar_item(client, api_headers):
     response = client.post(
         "/itens",
         json={"nome": "X-Burger", "descricao": "Hambúrguer com queijo", "preco": 15.00, "disponivel": True},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     assert response.status_code == 201
     data = response.json()
@@ -32,7 +32,7 @@ def test_criar_item_com_imagem_e_categoria(client, api_headers):
             "imagem": "https://r2.exemplo.com/x-burger.png",
             "categoria": "Hambúrgueres",
         },
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     assert response.status_code == 201
     data = response.json()
@@ -40,7 +40,7 @@ def test_criar_item_com_imagem_e_categoria(client, api_headers):
     assert data["categoria"] == "Hambúrgueres"
 
     # Persistiu (não só no response)
-    fetched = client.get(f"/itens/{data['id']}", headers=api_headers["pwa"])
+    fetched = client.get(f"/itens/{data['id']}", headers=api_headers["pwa_cliente"])
     assert fetched.json()["imagem"] == "https://r2.exemplo.com/x-burger.png"
     assert fetched.json()["categoria"] == "Hambúrgueres"
 
@@ -50,7 +50,7 @@ def test_atualizar_item_imagem_e_categoria(client, api_headers):
     create = client.post(
         "/itens",
         json={"nome": "X-Burger", "descricao": "Hambúrguer", "preco": 15.00, "disponivel": True},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     item_id = create.json()["id"]
     assert create.json()["imagem"] is None
@@ -66,13 +66,13 @@ def test_atualizar_item_imagem_e_categoria(client, api_headers):
             "imagem": "https://r2.exemplo.com/x-burger.png",
             "categoria": "Hambúrgueres",
         },
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     assert response.status_code == 200
     assert response.json()["imagem"] == "https://r2.exemplo.com/x-burger.png"
     assert response.json()["categoria"] == "Hambúrgueres"
 
-    fetched = client.get(f"/itens/{item_id}", headers=api_headers["pwa"])
+    fetched = client.get(f"/itens/{item_id}", headers=api_headers["pwa_cliente"])
     assert fetched.json()["imagem"] == "https://r2.exemplo.com/x-burger.png"
     assert fetched.json()["categoria"] == "Hambúrgueres"
 
@@ -83,10 +83,10 @@ def test_listar_itens(client, api_headers):
     client.post(
         "/itens",
         json={"nome": "X-Burger", "descricao": "Hambúrguer", "preco": 15.00, "disponivel": True},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     # Listar
-    response = client.get("/itens", headers=api_headers["pwa"])
+    response = client.get("/itens", headers=api_headers["pwa_cliente"])
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
@@ -95,14 +95,14 @@ def test_listar_itens(client, api_headers):
 
 def test_listar_itens_vazio(client, api_headers):
     """GET /itens retorna lista vazia quando não há itens."""
-    response = client.get("/itens", headers=api_headers["pwa"])
+    response = client.get("/itens", headers=api_headers["pwa_cliente"])
     assert response.status_code == 200
     assert response.json() == []
 
 
 def test_obter_item_inexistente(client, api_headers):
     """GET /itens/999 retorna 404."""
-    response = client.get("/itens/999", headers=api_headers["pwa"])
+    response = client.get("/itens/999", headers=api_headers["pwa_cliente"])
     assert response.status_code == 404
 
 
@@ -111,11 +111,11 @@ def test_obter_item_existente(client, api_headers):
     create = client.post(
         "/itens",
         json={"nome": "Refrigerante", "descricao": "Lata 350ml", "preco": 6.00, "disponivel": True},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     item_id = create.json()["id"]
 
-    response = client.get(f"/itens/{item_id}", headers=api_headers["pwa"])
+    response = client.get(f"/itens/{item_id}", headers=api_headers["pwa_cliente"])
     assert response.status_code == 200
     assert response.json()["nome"] == "Refrigerante"
 
@@ -125,14 +125,14 @@ def test_atualizar_item(client, api_headers):
     create = client.post(
         "/itens",
         json={"nome": "X-Burger", "descricao": "Hambúrguer", "preco": 15.00, "disponivel": True},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     item_id = create.json()["id"]
 
     response = client.put(
         f"/itens/{item_id}",
         json={"nome": "X-Burger Especial", "descricao": "Hambúrguer artesanal", "preco": 18.00, "disponivel": False},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     assert response.status_code == 200
     data = response.json()
@@ -146,15 +146,15 @@ def test_deletar_item(client, api_headers):
     create = client.post(
         "/itens",
         json={"nome": "Batata Frita", "descricao": "Porção", "preco": 10.00, "disponivel": True},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     item_id = create.json()["id"]
 
-    response = client.delete(f"/itens/{item_id}", headers=api_headers["pwa"])
+    response = client.delete(f"/itens/{item_id}", headers=api_headers["pwa_cliente"])
     assert response.status_code == 204
 
     # Verificar que não existe mais
-    response = client.get(f"/itens/{item_id}", headers=api_headers["pwa"])
+    response = client.get(f"/itens/{item_id}", headers=api_headers["pwa_cliente"])
     assert response.status_code == 404
 
 

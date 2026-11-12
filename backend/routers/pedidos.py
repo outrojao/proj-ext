@@ -72,7 +72,7 @@ async def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
         horario_agendamento=pedido.horario_agendamento,
         nome_cliente=pedido.nome_cliente,
         status="PENDENTE",
-        origem="PWA",
+        origem="PWA_CLIENTE",
         total=0.0,
     )
     db.add(db_pedido)
@@ -91,7 +91,7 @@ async def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
 
     # Notificar App Mobile: novo pedido
     await manager.send_to_client(
-        "app_mobile",
+        "pwa_admin",
         websocket_event("novo_pedido", {
             "pedido_id": db_pedido.id,
             "status": db_pedido.status,
@@ -124,7 +124,7 @@ def fila_painel(db: Session = Depends(get_db)):
         db.query(Pedido)
         .filter(
             Pedido.status == "PRONTO",
-            Pedido.origem == "PWA",
+            Pedido.origem == "PWA_CLIENTE",
             or_(
                 Pedido.painel_status == "AGUARDANDO",
                 Pedido.painel_status.is_(None),
@@ -190,7 +190,7 @@ async def atualizar_status(
         )
 
     # Guard: apenas o App Mobile pode confirmar o pagamento
-    if novo_status == "PAGO" and tipo_cliente(request.headers.get("X-API-Key")) == "pwa":
+    if novo_status == "PAGO" and tipo_cliente(request.headers.get("X-API-Key")) == "pwa_cliente":
         raise HTTPException(
             status_code=403,
             detail="Apenas o App Mobile pode marcar o pedido como PAGO",
@@ -205,7 +205,7 @@ async def atualizar_status(
 
     # Notificar PWA + App Mobile: status atualizado
     await manager.send_to_clients(
-        ["pwa", "app_mobile"],
+        ["pwa_cliente", "pwa_admin"],
         websocket_event("status_atualizado", {
             "pedido_id": pedido.id,
             "status": pedido.status,
@@ -214,13 +214,13 @@ async def atualizar_status(
     )
 
     # Se virou PRONTO, colocar na fila do painel LCD (ESP32).
-    if novo_status == "PRONTO" and pedido.origem == "PWA":
+    if novo_status == "PRONTO" and pedido.origem == "PWA_CLIENTE":
         pedido_para_exibir = preparar_pedido_pronto(db, pedido)
         if pedido_para_exibir:
             await manager.send_to_client("esp32", evento_pedido("pedido_pronto", pedido_para_exibir))
 
     # Se virou ENTREGUE, liberar o painel LCD e avançar a fila.
-    if novo_status == "ENTREGUE" and pedido.origem == "PWA":
+    if novo_status == "ENTREGUE" and pedido.origem == "PWA_CLIENTE":
         proximo = finalizar_exibicao(db, pedido)
         await manager.send_to_client("esp32", evento_pedido("pedido_entregue", pedido))
         if proximo:

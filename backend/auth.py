@@ -14,8 +14,8 @@ load_dotenv()
 
 # API keys por cliente (lidas do .env)
 API_KEYS = {
-    "pwa": os.getenv("API_KEY_PWA", ""),
-    "app_mobile": os.getenv("API_KEY_APP", ""),
+    "pwa_cliente": os.getenv("API_KEY_PWA_CLIENTE", ""),
+    "pwa_admin": os.getenv("API_KEY_PWA_ADMIN", ""),
     "esp32": os.getenv("API_KEY_ESP32", ""),
 }
 

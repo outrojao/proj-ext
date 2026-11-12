@@ -12,7 +12,7 @@ def _criar_itens(client, api_headers):
         resp = client.post(
             "/itens",
             json={"nome": nome, "descricao": f"Descrição {nome}", "preco": preco, "disponivel": True},
-            headers=api_headers["pwa"],
+            headers=api_headers["pwa_cliente"],
         )
         itens.append(resp.json())
     return itens
@@ -33,12 +33,12 @@ def test_criar_pedido(client, api_headers):
             ],
             "horario_agendamento": "12:30",
         },
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     assert response.status_code == 201
     data = response.json()
     assert data["status"] == "PENDENTE"
-    assert data["origem"] == "PWA"
+    assert data["origem"] == "PWA_CLIENTE"
     assert data["numero"] is None
     assert data["total"] == 36.0  # 2x15 + 1x6
     assert len(data["itens"]) == 2
@@ -55,7 +55,7 @@ def test_criar_pedido_com_nome_cliente(client, api_headers):
             "horario_agendamento": "12:30",
             "nome_cliente": "João",
         },
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     assert response.status_code == 201
     assert response.json()["nome_cliente"] == "João"
@@ -68,7 +68,7 @@ def test_criar_pedido_com_nome_cliente(client, api_headers):
     sem_nome = client.post(
         "/pedidos",
         json={"itens": [{"item_id": itens[1]["id"], "quantidade": 1}], "horario_agendamento": "12:30"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     assert sem_nome.status_code == 201
     assert sem_nome.json()["nome_cliente"] is None
@@ -79,7 +79,7 @@ def test_criar_pedido_item_inexistente(client, api_headers):
     response = client.post(
         "/pedidos",
         json={"itens": [{"item_id": 999, "quantidade": 1}], "horario_agendamento": "12:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     assert response.status_code == 400
 
@@ -91,12 +91,12 @@ def test_criar_pedido_item_indisponivel(client, api_headers):
     client.put(
         f"/itens/{itens[0]['id']}",
         json={"nome": itens[0]["nome"], "descricao": itens[0]["descricao"], "preco": itens[0]["preco"], "disponivel": False},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     response = client.post(
         "/pedidos",
         json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     assert response.status_code == 400
 
@@ -109,7 +109,7 @@ def test_listar_pedidos(client, api_headers):
     client.post(
         "/pedidos",
         json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     response = client.get("/pedidos", headers=api_headers["app"])
     assert response.status_code == 200
@@ -122,7 +122,7 @@ def test_listar_pendentes(client, api_headers):
     client.post(
         "/pedidos",
         json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     response = client.get("/pedidos/pendentes", headers=api_headers["app"])
     assert response.status_code == 200
@@ -146,7 +146,7 @@ def test_atualizar_status_valido(client, api_headers):
     create = client.post(
         "/pedidos",
         json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     pedido_id = create.json()["id"]
 
@@ -165,7 +165,7 @@ def test_atualizar_status_invalido(client, api_headers):
     create = client.post(
         "/pedidos",
         json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     pedido_id = create.json()["id"]
 
@@ -195,7 +195,7 @@ def test_numero_gerado_no_pago(client, api_headers):
     create = client.post(
         "/pedidos",
         json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     pedido_id = create.json()["id"]
     assert create.json()["numero"] is None
@@ -216,11 +216,11 @@ def test_obter_numero_pedido_nao_pago(client, api_headers):
     create = client.post(
         "/pedidos",
         json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     pedido_id = create.json()["id"]
 
-    response = client.get(f"/pedidos/{pedido_id}/numero", headers=api_headers["pwa"])
+    response = client.get(f"/pedidos/{pedido_id}/numero", headers=api_headers["pwa_cliente"])
     assert response.status_code == 400
 
 
@@ -232,7 +232,7 @@ def test_numeracao_sequencial(client, api_headers):
     p1 = client.post(
         "/pedidos",
         json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     ).json()
     client.patch(f"/pedidos/{p1['id']}/status", json={"novo_status": "CONFIRMADO"}, headers=api_headers["app"])
     p1_pago = client.patch(f"/pedidos/{p1['id']}/status", json={"novo_status": "PAGO"}, headers=api_headers["app"]).json()
@@ -242,7 +242,7 @@ def test_numeracao_sequencial(client, api_headers):
     p2 = client.post(
         "/pedidos",
         json={"itens": [{"item_id": itens[1]["id"], "quantidade": 1}], "horario_agendamento": "13:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     ).json()
     client.patch(f"/pedidos/{p2['id']}/status", json={"novo_status": "CONFIRMADO"}, headers=api_headers["app"])
     p2_pago = client.patch(f"/pedidos/{p2['id']}/status", json={"novo_status": "PAGO"}, headers=api_headers["app"]).json()
@@ -257,7 +257,7 @@ def test_fluxo_completo(client, api_headers):
     create = client.post(
         "/pedidos",
         json={"itens": [{"item_id": itens[0]["id"], "quantidade": 2}], "horario_agendamento": "14:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     pedido_id = create.json()["id"]
 
@@ -285,7 +285,7 @@ def test_fluxo_cancelado(client, api_headers):
     create = client.post(
         "/pedidos",
         json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "15:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     pedido_id = create.json()["id"]
 
@@ -300,7 +300,7 @@ def test_fluxo_cancelado_depois_de_pago(client, api_headers):
     create = client.post(
         "/pedidos",
         json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}], "horario_agendamento": "15:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     pedido_id = create.json()["id"]
 
@@ -317,7 +317,7 @@ def _levar_ate_pronto(client, api_headers, item_id):
     create = client.post(
         "/pedidos",
         json={"itens": [{"item_id": item_id, "quantidade": 1}], "horario_agendamento": "12:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     assert create.status_code == 201
     pedido_id = create.json()["id"]

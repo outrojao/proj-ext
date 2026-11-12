@@ -38,7 +38,7 @@ def _criar_pedido(client, api_headers, itens, nome_cliente="Joao", horario="12:3
     resp = client.post(
         "/pedidos",
         json={"itens": itens, "nome_cliente": nome_cliente, "horario_agendamento": horario},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     assert resp.status_code == 201
     return resp.json()
@@ -66,9 +66,9 @@ def test_item_criado_no_admin_aparece_no_cliente_com_mesmos_dados(client, api_he
     )
 
     # Visão do cliente (lista + detalhe)
-    lista = client.get("/itens", headers=api_headers["pwa"]).json()
+    lista = client.get("/itens", headers=api_headers["pwa_cliente"]).json()
     no_cliente = next(i for i in lista if i["id"] == item["id"])
-    detalhe = client.get(f"/itens/{item['id']}", headers=api_headers["pwa"]).json()
+    detalhe = client.get(f"/itens/{item['id']}", headers=api_headers["pwa_cliente"]).json()
 
     for campo in ("id", "nome", "descricao", "preco", "disponivel", "imagem", "categoria"):
         assert no_cliente[campo] == item[campo], f"campo {campo} difere no cliente"
@@ -89,14 +89,14 @@ def test_item_editado_no_admin_reflete_no_cliente(client, api_headers):
 
     # Cliente vê os mesmos valores
     no_cliente = next(
-        i for i in client.get("/itens", headers=api_headers["pwa"]).json()
+        i for i in client.get("/itens", headers=api_headers["pwa_cliente"]).json()
         if i["id"] == item["id"]
     )
     assert no_cliente["preco"] == 14.9
     assert no_cliente["disponivel"] is False
 
     # Cliente usa ?disponivel=true: item desativado some da lista de compra
-    ids_disponiveis = [i["id"] for i in client.get("/itens?disponivel=true", headers=api_headers["pwa"]).json()]
+    ids_disponiveis = [i["id"] for i in client.get("/itens?disponivel=true", headers=api_headers["pwa_cliente"]).json()]
     assert item["id"] not in ids_disponiveis
 
 
@@ -112,7 +112,7 @@ def test_item_desativado_no_admin_bloqueia_novo_pedido_no_cliente(client, api_he
     resp = client.post(
         "/pedidos",
         json={"itens": [{"item_id": item["id"], "quantidade": 1}], "horario_agendamento": "13:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     assert resp.status_code == 400  # item indisponível não pode ser pedido
 
@@ -140,14 +140,14 @@ def test_pedido_criado_no_cliente_aparece_no_admin_com_mesmos_dados(client, api_
         assert fonte["total"] == 36.0, f"total diverge: {fonte['total']}"
         assert fonte["nome_cliente"] == "Joao"
         assert fonte["horario_agendamento"] == "12:30"
-        assert fonte["origem"] == "PWA"
+        assert fonte["origem"] == "PWA_CLIENTE"
         assert fonte["numero"] is None
         assert fonte["senha_retirada"] is None
         assert [(i["item_id"], i["quantidade"]) for i in fonte["itens"]] == \
                [(a["id"], 2), (b["id"], 1)]
 
     # Visão do cliente (ele consulta o próprio pedido) é a mesma
-    no_cliente = client.get(f"/pedidos/{criado['id']}", headers=api_headers["pwa"]).json()
+    no_cliente = client.get(f"/pedidos/{criado['id']}", headers=api_headers["pwa_cliente"]).json()
     assert no_cliente["total"] == no_admin["total"]
     assert no_cliente["status"] == no_admin["status"]
 
@@ -161,7 +161,7 @@ def test_aceite_do_admin_reflete_no_cliente(client, api_headers):
 
     _mudar_status(client, api_headers, pedido["id"], "CONFIRMADO")
 
-    no_cliente = client.get(f"/pedidos/{pedido['id']}", headers=api_headers["pwa"]).json()
+    no_cliente = client.get(f"/pedidos/{pedido['id']}", headers=api_headers["pwa_cliente"]).json()
     assert no_cliente["status"] == "CONFIRMADO"
 
 
@@ -171,7 +171,7 @@ def test_declaracao_do_cliente_reflete_no_admin_sem_mudar_status(client, api_hea
     _mudar_status(client, api_headers, pedido["id"], "CONFIRMADO")
 
     # Cliente clica "Já paguei"
-    resp = client.post(f"/pedidos/{pedido['id']}/declarar-pagamento", headers=api_headers["pwa"])
+    resp = client.post(f"/pedidos/{pedido['id']}/declarar-pagamento", headers=api_headers["pwa_cliente"])
     assert resp.status_code == 200
 
     # Admin vê a declaração (destaque âmbar) SEM o status ter mudado
@@ -184,12 +184,12 @@ def test_pago_gera_numero_e_senha_identicos_nos_dois_lados(client, api_headers):
     item = _criar_item(client, api_headers)
     pedido = _criar_pedido(client, api_headers, itens=[{"item_id": item["id"], "quantidade": 1}])
     _mudar_status(client, api_headers, pedido["id"], "CONFIRMADO")
-    client.post(f"/pedidos/{pedido['id']}/declarar-pagamento", headers=api_headers["pwa"])
+    client.post(f"/pedidos/{pedido['id']}/declarar-pagamento", headers=api_headers["pwa_cliente"])
 
     _mudar_status(client, api_headers, pedido["id"], "PAGO")
 
     no_admin = client.get(f"/pedidos/{pedido['id']}", headers=api_headers["app"]).json()
-    no_cliente = client.get(f"/pedidos/{pedido['id']}", headers=api_headers["pwa"]).json()
+    no_cliente = client.get(f"/pedidos/{pedido['id']}", headers=api_headers["pwa_cliente"]).json()
 
     # Primeiro PAGO da sequência (conftest reseta) → número 1
     assert no_admin["numero"] == 1
@@ -210,12 +210,12 @@ def test_guard_pwa_nao_consegue_marcar_pago(client, api_headers):
     resp = client.patch(
         f"/pedidos/{pedido['id']}/status",
         json={"novo_status": "PAGO"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     )
     assert resp.status_code == 403
 
     # E o pedido segue CONFIRMADO nos dois lados
-    assert client.get(f"/pedidos/{pedido['id']}", headers=api_headers["pwa"]).json()["status"] == "CONFIRMADO"
+    assert client.get(f"/pedidos/{pedido['id']}", headers=api_headers["pwa_cliente"]).json()["status"] == "CONFIRMADO"
     assert client.get(f"/pedidos/{pedido['id']}", headers=api_headers["app"]).json()["status"] == "CONFIRMADO"
 
 
@@ -235,7 +235,7 @@ def test_painel_fila_somente_aguardando_e_campos_painel_nao_expostos(client, api
 
     # Contrato: painel_status / painel_fila_posicao NÃO aparecem nas respostas
     for pid in (p1["id"], p2["id"]):
-        corpo = client.get(f"/pedidos/{pid}", headers=api_headers["pwa"]).json()
+        corpo = client.get(f"/pedidos/{pid}", headers=api_headers["pwa_cliente"]).json()
         assert "painel_status" not in corpo
         assert "painel_fila_posicao" not in corpo
         assert corpo["status"] == "PRONTO"
@@ -244,7 +244,7 @@ def test_painel_fila_somente_aguardando_e_campos_painel_nao_expostos(client, api
 def test_fluxo_completo_reflete_ambos_lados_com_ws_do_admin(client, api_headers):
     item = _criar_item(client, api_headers)
 
-    with client.websocket_connect("/ws/app_mobile?api_key=test-key-app") as ws_app:
+    with client.websocket_connect("/ws/pwa_admin?api_key=test-key-app") as ws_app:
         # Cliente cria → admin recebe em tempo real (novo_pedido)
         pedido = _criar_pedido(client, api_headers, itens=[{"item_id": item["id"], "quantidade": 1}])
         msg = json.loads(ws_app.receive_text())
@@ -255,7 +255,7 @@ def test_fluxo_completo_reflete_ambos_lados_com_ws_do_admin(client, api_headers)
         # Cliente declara → admin recebe pagamento_declarado
         _mudar_status(client, api_headers, pedido["id"], "CONFIRMADO")
         ws_app.receive_text()  # status_atualizado CONFIRMADO
-        client.post(f"/pedidos/{pedido['id']}/declarar-pagamento", headers=api_headers["pwa"])
+        client.post(f"/pedidos/{pedido['id']}/declarar-pagamento", headers=api_headers["pwa_cliente"])
         msg = json.loads(ws_app.receive_text())
         assert msg["event"] == "pagamento_declarado"
         assert msg["data"]["pedido_id"] == pedido["id"]
@@ -268,7 +268,7 @@ def test_fluxo_completo_reflete_ambos_lados_com_ws_do_admin(client, api_headers)
         _mudar_status(client, api_headers, pedido["id"], "ENTREGUE")
         ws_app.receive_text()
 
-        no_cliente = client.get(f"/pedidos/{pedido['id']}", headers=api_headers["pwa"]).json()
+        no_cliente = client.get(f"/pedidos/{pedido['id']}", headers=api_headers["pwa_cliente"]).json()
         assert no_cliente["status"] == "ENTREGUE"
         assert no_cliente["numero"] is not None
         assert no_cliente["senha_retirada"] is not None

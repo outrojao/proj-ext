@@ -38,7 +38,7 @@ _TestSession = sessionmaker(
 def _pedido(status_painel=None, posicao=None, exibido_em=None):
     return Pedido(
         status="PRONTO",
-        origem="PWA",
+        origem="PWA_CLIENTE",
         total=Decimal("20.00"),
         painel_status=status_painel,
         painel_exibido_em=exibido_em,
@@ -52,7 +52,7 @@ def _criar_itens(client, api_headers):
         resp = client.post(
             "/itens",
             json={"nome": nome, "descricao": nome, "preco": preco, "disponivel": True},
-            headers=api_headers["pwa"],
+            headers=api_headers["pwa_cliente"],
         )
         assert resp.status_code == 201
         itens.append(resp.json())
@@ -63,7 +63,7 @@ def _levar_ate_pronto(client, api_headers, item_id):
     create = client.post(
         "/pedidos",
         json={"itens": [{"item_id": item_id, "quantidade": 1}], "horario_agendamento": "12:00"},
-        headers=api_headers["pwa"],
+        headers=api_headers["pwa_cliente"],
     ).json()
     pedido_id = create["id"]
     for status in ("CONFIRMADO", "PAGO", "PRONTO"):
