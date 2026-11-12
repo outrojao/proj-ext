@@ -7,7 +7,7 @@ import json
 from fastapi import WebSocket
 
 # Tipos de cliente válidos
-CLIENT_TYPES = {"app_mobile", "pwa", "esp32"}
+CLIENT_TYPES = {"pwa_admin", "pwa_cliente", "esp32"}
 
 
 def websocket_event(event: str, data: dict | None = None) -> dict:
@@ -22,8 +22,8 @@ class ConnectionManager:
     def __init__(self):
         # Dict de listas de conexões por tipo de cliente
         self.connections: dict[str, list[WebSocket]] = {
-            "app_mobile": [],
-            "pwa": [],
+            "pwa_admin": [],
+            "pwa_cliente": [],
             "esp32": [],
         }
 
