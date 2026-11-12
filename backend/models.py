@@ -31,7 +31,7 @@ class Pedido(Base):
     nome_cliente = Column(String(40), nullable=True)  # Nome opcional informado na PWA cliente
     horario_agendamento = Column(String, nullable=True)
     status = Column(String, default="PENDENTE", nullable=False)
-    origem = Column(String, default="PWA", nullable=False)  # Sempre "PWA" neste fluxo
+    origem = Column(String, default="PWA_CLIENTE", nullable=False)  # Sempre "PWA_CLIENTE" neste fluxo
     total = Column(Numeric(10, 2), default=0.0, nullable=False)
     painel_status = Column(String, nullable=True)
     painel_exibido_em = Column(DateTime, nullable=True)
