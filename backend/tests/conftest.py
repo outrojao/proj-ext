@@ -138,6 +138,6 @@ def api_headers():
     """Headers com API key para usar nas requisições de teste."""
     return {
         "pwa_cliente": {"X-API-Key": "test-key-pwa"},
-        "app": {"X-API-Key": "test-key-app"},
+        "pwa_admin": {"X-API-Key": "test-key-app"},
         "esp32": {"X-API-Key": "test-key-esp32"},
     }
