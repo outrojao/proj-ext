@@ -83,7 +83,7 @@ async def websocket_endpoint(websocket: WebSocket, client_type: str):
     """
     Endpoint WebSocket para conexões de clientes.
 
-    Tipos válidos: app_mobile, pwa, esp32
+    Tipos válidos: pwa_admin, pwa_cliente, esp32
 
     O ESP32 (painel LCD) conecta aqui para receber:
     - pedido_pronto: exibir número no painel
