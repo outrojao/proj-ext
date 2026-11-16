@@ -30,7 +30,7 @@ def test_geracoes_distintas():
 
 
 def test_marcar_pago_gera_numero_e_senha(db_session):
-    pedido = Pedido(status="CONFIRMADO", origem="PWA", total=15.0)
+    pedido = Pedido(status="CONFIRMADO", origem="PWA_CLIENTE", total=15.0)
     db_session.add(pedido)
     db_session.commit()
     db_session.refresh(pedido)
@@ -52,7 +52,7 @@ def test_marcar_pago_gera_numero_e_senha(db_session):
 def test_senhas_unicas_entre_pedidos(db_session):
     senhas = []
     for _ in range(3):
-        pedido = Pedido(status="CONFIRMADO", origem="PWA", total=1.0)
+        pedido = Pedido(status="CONFIRMADO", origem="PWA_CLIENTE", total=1.0)
         db_session.add(pedido)
         db_session.flush()
         marcar_pago(db_session, pedido)
@@ -61,8 +61,8 @@ def test_senhas_unicas_entre_pedidos(db_session):
 
 
 def test_constraint_unicidade_senha(db_session):
-    p1 = Pedido(status="PAGO", origem="PWA", total=1.0, numero=1, senha_retirada="AB2C")
-    p2 = Pedido(status="PAGO", origem="PWA", total=1.0, numero=2, senha_retirada="AB2C")
+    p1 = Pedido(status="PAGO", origem="PWA_CLIENTE", total=1.0, numero=1, senha_retirada="AB2C")
+    p2 = Pedido(status="PAGO", origem="PWA_CLIENTE", total=1.0, numero=2, senha_retirada="AB2C")
     db_session.add_all([p1, p2])
     with pytest.raises(IntegrityError):
         db_session.commit()

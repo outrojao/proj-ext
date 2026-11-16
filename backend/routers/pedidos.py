@@ -44,12 +44,16 @@ TRANSICOES_VALIDAS = {
 
 
 def calcular_total(db: Session, itens: list[PedidoItem]) -> float:
-    """Calcula o total do pedido baseado nos itens e quantidades."""
+    """Calcula o total do pedido: itens + adicionais escolhidos em cada linha."""
     total = Decimal("0.00")
     for pi in itens:
         item = db.query(Item).filter(Item.id == pi.item_id).first()
         if item:
             total += item.preco * pi.quantidade
+        for ad in pi.adicionais or []:
+            ad_item = db.query(Item).filter(Item.id == ad["item_id"]).first()
+            if ad_item:
+                total += ad_item.preco * ad.get("quantidade", 1)
     return total
 
 
@@ -59,28 +63,45 @@ async def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
     Cria um novo pedido (origem PWA, status PENDENTE).
     Notifica o App Mobile via WebSocket (novo_pedido).
     """
-    # Validar itens
+    # Validar itens + adicionais de cada linha
     for pi in pedido.itens:
         item = db.query(Item).filter(Item.id == pi.item_id).first()
         if not item:
             raise HTTPException(status_code=400, detail=f"Item {pi.item_id} não encontrado")
         if not item.disponivel:
             raise HTTPException(status_code=400, detail=f"Item '{item.nome}' não está disponível")
+        for ad in pi.adicionais:
+            ad_item = db.query(Item).filter(Item.id == ad.item_id).first()
+            if not ad_item:
+                raise HTTPException(status_code=400, detail=f"Adicional {ad.item_id} não encontrado")
+            if not ad_item.disponivel:
+                raise HTTPException(status_code=400, detail=f"Adicional '{ad_item.nome}' não está disponível")
+            if not ad_item.aplica_em or pi.item_id not in ad_item.aplica_em:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Adicional '{ad_item.nome}' não pertence ao item '{item.nome}'",
+                )
 
     # Criar pedido
     db_pedido = Pedido(
         horario_agendamento=pedido.horario_agendamento,
         nome_cliente=pedido.nome_cliente,
+        observacao=pedido.observacao,
         status="PENDENTE",
-        origem="PWA",
+        origem="PWA_CLIENTE",
         total=0.0,
     )
     db.add(db_pedido)
 
-    # Criar itens do pedido (via relationship para o cálculo do total)
+    # Criar itens do pedido (via relationship para o cálculo do total);
+    # adicionais ficam congelados na linha (histórico do que foi escolhido)
     for pi in pedido.itens:
         db_pedido.itens.append(
-            PedidoItem(item_id=pi.item_id, quantidade=pi.quantidade)
+            PedidoItem(
+                item_id=pi.item_id,
+                quantidade=pi.quantidade,
+                adicionais=[{"item_id": ad.item_id, "quantidade": ad.quantidade} for ad in pi.adicionais],
+            )
         )
 
     # Calcular total
@@ -91,7 +112,7 @@ async def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
 
     # Notificar App Mobile: novo pedido
     await manager.send_to_client(
-        "app_mobile",
+        "pwa_admin",
         websocket_event("novo_pedido", {
             "pedido_id": db_pedido.id,
             "status": db_pedido.status,
@@ -124,7 +145,7 @@ def fila_painel(db: Session = Depends(get_db)):
         db.query(Pedido)
         .filter(
             Pedido.status == "PRONTO",
-            Pedido.origem == "PWA",
+            Pedido.origem == "PWA_CLIENTE",
             or_(
                 Pedido.painel_status == "AGUARDANDO",
                 Pedido.painel_status.is_(None),
@@ -169,12 +190,15 @@ async def atualizar_status(
     Atualiza o status de um pedido.
 
     Regras:
-    - PAGO: apenas com a chave do App Mobile (403 para a PWA);
-      gera número sequencial + senha de retirada (não notifica painel)
+    - PAGO: gera número sequencial + senha de retirada (não notifica painel)
     - PRONTO: notifica painel LCD (ESP32) — pedido_pronto
     - ENTREGUE: notifica painel LCD (ESP32) — pedido_entregue (próximo da fila)
     - Qualquer mudança: notifica PWA + App Mobile — status_atualizado
+    - Apenas a chave do admin pode mudar status (401 para as demais)
     """
+    if tipo_cliente(request.headers.get("X-API-Key")) != "pwa_admin":
+        raise HTTPException(status_code=401, detail="Apenas o admin pode mudar o status de pedidos")
+
     pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
@@ -189,13 +213,6 @@ async def atualizar_status(
             detail=f"Transição inválida: {status_atual} → {novo_status}",
         )
 
-    # Guard: apenas o App Mobile pode confirmar o pagamento
-    if novo_status == "PAGO" and tipo_cliente(request.headers.get("X-API-Key")) == "pwa":
-        raise HTTPException(
-            status_code=403,
-            detail="Apenas o App Mobile pode marcar o pedido como PAGO",
-        )
-
     if novo_status == "PAGO":
         marcar_pago(db, pedido)
     else:
@@ -205,7 +222,7 @@ async def atualizar_status(
 
     # Notificar PWA + App Mobile: status atualizado
     await manager.send_to_clients(
-        ["pwa", "app_mobile"],
+        ["pwa_cliente", "pwa_admin"],
         websocket_event("status_atualizado", {
             "pedido_id": pedido.id,
             "status": pedido.status,
@@ -214,13 +231,13 @@ async def atualizar_status(
     )
 
     # Se virou PRONTO, colocar na fila do painel LCD (ESP32).
-    if novo_status == "PRONTO" and pedido.origem == "PWA":
+    if novo_status == "PRONTO" and pedido.origem == "PWA_CLIENTE":
         pedido_para_exibir = preparar_pedido_pronto(db, pedido)
         if pedido_para_exibir:
             await manager.send_to_client("esp32", evento_pedido("pedido_pronto", pedido_para_exibir))
 
     # Se virou ENTREGUE, liberar o painel LCD e avançar a fila.
-    if novo_status == "ENTREGUE" and pedido.origem == "PWA":
+    if novo_status == "ENTREGUE" and pedido.origem == "PWA_CLIENTE":
         proximo = finalizar_exibicao(db, pedido)
         await manager.send_to_client("esp32", evento_pedido("pedido_entregue", pedido))
         if proximo:

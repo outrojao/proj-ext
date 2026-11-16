@@ -13,12 +13,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # ── Configurar variáveis de ambiente para testes (antes de importar o app) ──
-os.environ["API_KEY_PWA"] = "test-key-pwa"
-os.environ["API_KEY_APP"] = "test-key-app"
+os.environ["API_KEY_PWA_CLIENTE"] = "test-key-pwa"
+os.environ["API_KEY_PWA_ADMIN"] = "test-key-app"
 os.environ["API_KEY_ESP32"] = "test-key-esp32"
 os.environ.setdefault("PIX_CHAVE", "pix@dominio-teste.com.br")
 os.environ.setdefault("PIX_NOME", "Loja Teste")
 os.environ.setdefault("PIX_CIDADE", "Sao Paulo")
+os.environ["EXPOSE_TEST_ROUTES"] = "1"  # monta o router /test (as fixtures usam /test/seed)
 
 import pytest
 from fastapi.testclient import TestClient
@@ -113,8 +114,8 @@ def seed_itens(client):
 
     itens_criados = []
     for item in itens_data:
-        # Usa rota de teste (não exige API key)
-        response = client.post("/test/seed")
+        # Usa rota de teste de dev (/test exige uma API key válida)
+        response = client.post("/test/seed", headers={"X-API-Key": "test-key-app"})
         if response.status_code == 200 and "cardapio" in response.json():
             return response.json()["cardapio"]
         # Se seed falhar (banco já tem dados), cria via API de itens
@@ -125,7 +126,7 @@ def seed_itens(client):
         response = client.post(
             "/itens",
             json=item,
-            headers={"X-API-Key": "test-key-pwa"},
+            headers={"X-API-Key": "test-key-app"},  # mutação de item: só admin
         )
         if response.status_code == 201:
             itens_criados.append(response.json())
@@ -137,7 +138,7 @@ def seed_itens(client):
 def api_headers():
     """Headers com API key para usar nas requisições de teste."""
     return {
-        "pwa": {"X-API-Key": "test-key-pwa"},
+        "pwa_cliente": {"X-API-Key": "test-key-pwa"},
         "app": {"X-API-Key": "test-key-app"},
         "esp32": {"X-API-Key": "test-key-esp32"},
     }

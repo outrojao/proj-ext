@@ -5,10 +5,10 @@ install:
 	cp .env.example .env
 	@echo "Instalação concluída! Edite o arquivo .env com suas API keys."
 
-run:
+run: migrate
 	uvicorn main:app --host 0.0.0.0 --port $${PORT:-8000}
 
-dev:
+dev: migrate
 	uvicorn main:app --reload --host 0.0.0.0 --port $${PORT:-8000}
 
 migrate:

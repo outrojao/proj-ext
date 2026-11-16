@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#bf2431" />
+    <meta
+      name="description"
+      content="Atendimento do LutzGrill: pedidos, confirmação de pagamento, retirada e cardápio."
+    />
+    <title>LutzGrill — Atendimento</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/icon-192.png" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <a class="pular" href="#main">Pular para o conteúdo</a>
+
+    <div id="banner-offline" class="banner banner-offline" role="status" hidden>
+      Sem conexão com o backend — as ações ficarão indisponíveis até reconectar.
+    </div>
+    <div id="banner-demo" class="banner banner-demo" hidden>MODO DEMO</div>
+    <div id="banner-http" class="banner banner-http" hidden>
+      Conexão insegura (HTTP) — as ações estão desabilitadas. Use HTTPS em
+      produção.
+    </div>
+    <div id="banner-instalacao" class="banner banner-instalacao" hidden>
+      <span>Instale o app no tablet do balcão.</span>
+      <span class="banner-acoes">
+        <button id="btn-instalar" class="btn-primario btn-mini" type="button">
+          Instalar
+        </button>
+        <button
+          id="btn-fechar-instalacao"
+          class="btn-suave btn-mini"
+          type="button"
+          aria-label="Fechar aviso de instalação"
+        >
+          Fechar
+        </button>
+      </span>
+    </div>
+
+    <header class="topo">
+      <img class="logo" src="assets/logo.svg" alt="" />
+      <span id="app-nome-loja" class="nome-loja">LutzGrill</span>
+      <span
+        id="chip-conexao"
+        class="chip-conexao"
+        role="status"
+        aria-live="polite"
+      >
+        <span
+          id="chip-conexao-ponto"
+          class="chip-conexao-ponto"
+          aria-hidden="true"
+        ></span>
+        <span id="chip-conexao-texto">Conectando…</span>
+      </span>
+      <button
+        id="btn-som"
+        class="btn-som"
+        type="button"
+        aria-pressed="true"
+        aria-label="Desligar sons"
+      >
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <polygon
+            points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"
+            fill="currentColor"
+          ></polygon>
+          <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+          <path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
+        </svg>
+      </button>
+    </header>
+
+    <nav class="tabs" aria-label="Seções do atendimento">
+      <button
+        id="tab-atendimento"
+        class="tab"
+        type="button"
+        aria-current="page"
+      >
+        Atendimento
+        <span id="badge-novos" class="badge-contagem" hidden>0</span>
+      </button>
+      <button id="tab-retirada" class="tab" type="button">Retirada</button>
+      <button id="tab-cardapio" class="tab" type="button">Cardápio</button>
+    </nav>
+
+    <main id="main">
+      <!-- ── ATENDIMENTO (4 seções por status) ── -->
+      <section
+        data-view="atendimento"
+        class="view"
+        aria-labelledby="titulo-atendimento"
+      >
+        <div class="view-cabecalho">
+          <h1 id="titulo-atendimento" tabindex="-1">Atendimento</h1>
+        </div>
+        <div id="atendimento-skeleton" class="skeleton-caixa" hidden>
+          <p class="skeleton-msg">Carregando pedidos…</p>
+        </div>
+        <div class="painel-grid">
+          <div class="secao-pedidos">
+            <div class="secao-cabecalho">
+              <h2>Novos</h2>
+              <span id="contagem-novos" class="contagem" aria-live="polite"
+                >0</span
+              >
+            </div>
+            <ul id="lista-novos" role="list" class="lista-pedidos"></ul>
+            <p id="vazio-novos" class="estado-secao" hidden>
+              Nenhum pedido novo.
+            </p>
+          </div>
+          <div class="secao-pedidos">
+            <div class="secao-cabecalho">
+              <h2>Aguardando pagamento</h2>
+              <span id="contagem-pagamento" class="contagem" aria-live="polite"
+                >0</span
+              >
+            </div>
+            <ul id="lista-pagamento" role="list" class="lista-pedidos"></ul>
+            <p id="vazio-pagamento" class="estado-secao" hidden>
+              Nenhum pedido aguardando pagamento.
+            </p>
+          </div>
+          <div class="secao-pedidos">
+            <div class="secao-cabecalho">
+              <h2>Fila de preparo</h2>
+              <span id="contagem-preparo" class="contagem" aria-live="polite"
+                >0</span
+              >
+            </div>
+            <ul id="lista-preparo" role="list" class="lista-pedidos"></ul>
+            <p id="vazio-preparo" class="estado-secao" hidden>
+              Nenhum pedido aguardando preparo.
+            </p>
+          </div>
+          <div class="secao-pedidos">
+            <div class="secao-cabecalho">
+              <h2>Pronto</h2>
+              <span id="contagem-painel" class="contagem" aria-live="polite"
+                >0</span
+              >
+            </div>
+            <ul id="lista-painel" role="list" class="lista-pedidos"></ul>
+            <p id="vazio-painel" class="estado-secao" hidden>
+              Nenhum pedido pronto.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── RETIRADA (número + senha) ── -->
+      <section
+        data-view="retirada"
+        class="view"
+        hidden
+        aria-labelledby="titulo-retirada"
+      >
+        <div class="view-cabecalho">
+          <h1 id="titulo-retirada" tabindex="-1">Retirada</h1>
+        </div>
+        <div class="retirada-grid">
+          <form id="form-retirada" novalidate>
+            <div class="campo">
+              <label for="input-numero">Número do pedido</label>
+              <input
+                id="input-numero"
+                type="text"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="Ex.: 104"
+              />
+            </div>
+            <div class="campo">
+              <label for="input-senha">Senha de retirada</label>
+              <input
+                id="input-senha"
+                type="text"
+                maxlength="4"
+                autocapitalize="characters"
+                autocomplete="off"
+                placeholder="4 caracteres"
+                aria-describedby="retirada-dica"
+              />
+            </div>
+            <div class="retirada-acoes">
+              <button id="btn-buscar" class="btn-primario" type="submit">
+                Buscar
+              </button>
+              <button id="btn-limpar" class="btn-suave" type="button">
+                Limpar
+              </button>
+            </div>
+          </form>
+          <div class="retirada-resultado">
+            <article id="retirada-achado" class="retirada-card" hidden>
+              <div class="identificacao-par">
+                <span class="rotulo-campo">Número</span>
+                <strong id="retirada-numero" class="numero-grande"></strong>
+              </div>
+              <div class="identificacao-par">
+                <span class="rotulo-campo">Senha</span>
+                <span
+                  id="retirada-senha"
+                  class="senha-blocos"
+                  aria-label="Senha de retirada"
+                ></span>
+              </div>
+              <p id="retirada-nome" class="retirada-nome"></p>
+              <p id="retirada-resumo" class="retirada-resumo"></p>
+              <p id="retirada-etiqueta" class="etiqueta" hidden></p>
+              <button
+                id="btn-entregar"
+                class="btn-primario"
+                type="button"
+                hidden
+              >
+                Entregar
+              </button>
+            </article>
+            <div id="retirada-nao-encontrado" class="estado" hidden>
+              <p>Nenhum pedido com esse número e senha.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── CARDÁPIO (CRUD) ── -->
+      <section
+        data-view="cardapio"
+        class="view"
+        hidden
+        aria-labelledby="titulo-cardapio-admin"
+      >
+        <div class="view-cabecalho">
+          <h1 id="titulo-cardapio-admin" tabindex="-1">Cardápio</h1>
+          <button id="btn-novo-item" class="btn-suave btn-mini" type="button">
+            Novo item
+          </button>
+        </div>
+        <form id="form-item" class="form-item" hidden>
+          <h2 id="form-item-titulo" class="titulo-bloco">Novo item</h2>
+          <div class="campo">
+            <label for="input-item-nome">Nome *</label>
+            <input
+              id="input-item-nome"
+              type="text"
+              maxlength="60"
+              autocomplete="off"
+            />
+          </div>
+          <div class="campo">
+            <label for="input-item-desc">Descrição</label>
+            <input
+              id="input-item-desc"
+              type="text"
+              maxlength="200"
+              autocomplete="off"
+            />
+          </div>
+          <div class="campo-linha">
+            <div class="campo">
+              <label for="input-item-preco">Preço (R$) *</label>
+              <input
+                id="input-item-preco"
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                placeholder="Ex.: 15,50"
+              />
+            </div>
+            <div class="campo" id="campo-item-categoria">
+              <label for="input-item-categoria">Categoria</label>
+              <input
+                id="input-item-categoria"
+                type="text"
+                maxlength="40"
+                autocomplete="off"
+              />
+            </div>
+          </div>
+          <div class="campo">
+            <label for="input-item-imagem">Imagem (URL)</label>
+            <input
+              id="input-item-imagem"
+              type="url"
+              autocomplete="off"
+              placeholder="https://… (opcional)"
+            />
+          </div>
+          <div class="campo campo-imagem-arquivo">
+            <button id="btn-item-arquivo" class="btn-suave" type="button">
+              Escolher arquivo…
+            </button>
+            <input
+              id="input-item-arquivo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              hidden
+            />
+            <span
+              id="nome-arquivo-imagem"
+              class="nome-arquivo-imagem"
+              hidden
+            ></span>
+          </div>
+          <div class="campo campo-check">
+            <label class="linha-check">
+              <input id="input-item-disponivel" type="checkbox" checked />
+              Disponível para novos pedidos
+            </label>
+          </div>
+          <div class="campo campo-check">
+            <label class="linha-check">
+              <input id="input-item-e-adicional" type="checkbox" />
+              É adicional?
+            </label>
+          </div>
+          <div id="secao-aplica-em" class="secao-adicionais" hidden>
+            <h3 class="titulo-bloco">Adicionar em:</h3>
+            <p class="texto-suave">
+              Um adicional precisa ser relacionado a pelo menos um item do
+              cardápio.
+            </p>
+            <div id="lista-aplica-em"></div>
+          </div>
+          <div id="secao-adicionais" class="secao-adicionais" hidden>
+            <h3 class="titulo-bloco">Adicionais</h3>
+            <ul
+              id="lista-adicionais-form"
+              role="list"
+              class="lista-adicionais-form"
+            ></ul>
+            <p id="vazio-adicionais-form" class="texto-suave" hidden>
+              Nenhum adicional cadastrado.
+            </p>
+            <div class="campo-linha campo-adicionar-adicional">
+              <div class="campo">
+                <label for="input-adicional-nome">Novo adicional — nome</label>
+                <input
+                  id="input-adicional-nome"
+                  type="text"
+                  maxlength="60"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="campo">
+                <label for="input-adicional-preco">Preço (R$)</label>
+                <input
+                  id="input-adicional-preco"
+                  type="text"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  placeholder="Ex.: 2,00"
+                />
+              </div>
+              <button id="btn-add-adicional" class="btn-suave" type="button">
+                Adicionar
+              </button>
+            </div>
+          </div>
+          <p id="erro-item-form" class="mensagem-erro" role="alert" hidden></p>
+          <div class="form-acoes">
+            <button id="btn-salvar-item" class="btn-primario" type="submit">
+              Salvar
+            </button>
+            <button id="btn-cancelar-item" class="btn-suave" type="button">
+              Cancelar
+            </button>
+          </div>
+        </form>
+        <div id="cardapio-admin-skeleton" class="skeleton-caixa" hidden>
+          <p class="skeleton-msg">Carregando cardápio…</p>
+        </div>
+        <div id="cardapio-admin-erro" class="estado" hidden>
+          <p>Não foi possível carregar o cardápio.</p>
+          <button
+            id="btn-tentar-cardapio-admin"
+            class="btn-primario"
+            type="button"
+          >
+            Tentar novamente
+          </button>
+        </div>
+        <div id="cardapio-admin-vazio" class="estado" hidden>
+          <p>Cardápio vazio — cadastre o primeiro item.</p>
+          <button id="btn-novo-item-vazio" class="btn-primario" type="button">
+            Novo item
+          </button>
+        </div>
+        <ul
+          id="lista-cardapio-admin"
+          role="list"
+          class="lista-itens-admin"
+        ></ul>
+      </section>
+    </main>
+
+    <!-- ── Tela 401 (chave inválida) ── -->
+    <div id="tela-401" class="tela-erro-401" hidden>
+      <div class="estado estado-centro">
+        <h1 tabindex="-1">Chave inválida</h1>
+        <p>
+          Chave de API inválida ou sem permissão. Confira o
+          <code>API_KEY</code> em <code>js/config.js</code> e recarregue.
+        </p>
+        <button id="btn-recarregar-401" class="btn-primario" type="button">
+          Recarregar
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Modal: detalhe do pedido ── -->
+    <div id="modal-detalhe" class="modal-overlay" hidden>
+      <div
+        class="modal-painel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-detalhe-titulo"
+      >
+        <div class="modal-cabecalho">
+          <h2 id="modal-detalhe-titulo">Pedido</h2>
+          <button
+            id="btn-fechar-detalhe"
+            class="btn-fechar-modal"
+            type="button"
+            aria-label="Fechar detalhes"
+          >
+            ✕
+          </button>
+        </div>
+        <div id="modal-detalhe-corpo"></div>
+        <div id="modal-detalhe-acoes" class="modal-acoes"></div>
+      </div>
+    </div>
+
+    <!-- ── Modal: confirmação (rejeitar / remover) ── -->
+    <div id="modal-confirmar" class="modal-overlay" hidden>
+      <div
+        class="modal-painel modal-painel-pequena"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-confirmar-titulo"
+      >
+        <h2 id="modal-confirmar-titulo" class="titulo-bloco">Confirmar</h2>
+        <p id="modal-confirmar-texto"></p>
+        <div class="modal-acoes">
+          <button id="btn-confirmar-ok" class="btn-primario" type="button">
+            Confirmar
+          </button>
+          <button id="btn-confirmar-cancelar" class="btn-suave" type="button">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toasts" class="toasts" role="status"></div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

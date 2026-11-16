@@ -9,14 +9,17 @@ Configura:
 - Health check
 """
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+import os
+
+from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
+from sqlalchemy.orm import Session
 
 from auth import API_KEYS, tipo_cliente
 from websocket_manager import manager, CLIENT_TYPES, websocket_event
-from routers import itens, pedidos, pagamentos
-from database import SessionLocal
+from routers import itens, pedidos, pagamentos, test_mock
+from database import get_db
 from painel_service import (
     evento_pedido,
     expirar_exibicao,
@@ -31,9 +34,13 @@ app = FastAPI(
 )
 
 # ── CORS ──
+# Origens autorizadas a chamar a API. Em produção, defina CORS_ORIGINS com
+# os links hospedados dos PWA separados por vírgula. Sem a variável, fica
+# liberado (desenvolvimento local).
+_cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Em produção, restringir aos domínios do PWA
+    allow_origins=_cors_origins or ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,7 +53,7 @@ async def verify_api_key(request: Request, call_next):
     Valida o header X-API-Key em todas as rotas exceto /health e /docs.
     """
     # Rotas públicas (não exigem API key)
-    public_paths = ["/health", "/docs", "/openapi.json", "/redoc", "/test"]
+    public_paths = ["/health", "/docs", "/openapi.json", "/redoc"]
     if request.method == "OPTIONS":
         return await call_next(request)
     path = request.url.path
@@ -75,15 +82,19 @@ def health_check():
 app.include_router(itens.router)
 app.include_router(pedidos.router)
 app.include_router(pagamentos.router)  # Pagamento Pix + declaração de pagamento
+# Rotas de teste (seed/cenário/fluxos/limpar): só no dev, via EXPOSE_TEST_ROUTES=1.
+# Sem a variável o router nem é montado (404) — em produção elas não existem.
+if os.getenv("EXPOSE_TEST_ROUTES") == "1":
+    app.include_router(test_mock.router)
 
 
 # ── WebSocket Endpoint ──
 @app.websocket("/ws/{client_type}")
-async def websocket_endpoint(websocket: WebSocket, client_type: str):
+async def websocket_endpoint(websocket: WebSocket, client_type: str, db: Session = Depends(get_db)):
     """
     Endpoint WebSocket para conexões de clientes.
 
-    Tipos válidos: app_mobile, pwa, esp32
+    Tipos válidos: pwa_admin, pwa, esp32
 
     O ESP32 (painel LCD) conecta aqui para receber:
     - pedido_pronto: exibir número no painel
@@ -103,7 +114,9 @@ async def websocket_endpoint(websocket: WebSocket, client_type: str):
 
     if client_type == "esp32":
         # O ESP32 é um consumidor simples: o backend manda o que exibir.
-        db = SessionLocal()
+        # get_db (e não SessionLocal direta) para o override de testes valer;
+        # fecha cedo, pois a conexão fica aberta por horas (o close no
+        # teardown da dependência é no-op sobre sessão já fechada).
         try:
             exibindo = pedido_exibindo(db)
             if exibindo is not None:

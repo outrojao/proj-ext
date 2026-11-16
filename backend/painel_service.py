@@ -59,7 +59,7 @@ def pedido_exibindo(db: Session) -> Pedido | None:
         db.query(Pedido)
         .filter(
             Pedido.status == "PRONTO",
-            Pedido.origem == "PWA",
+            Pedido.origem == "PWA_CLIENTE",
             Pedido.painel_status == PAINEL_EXIBINDO,
         )
         .order_by(Pedido.painel_exibido_em, Pedido.numero)
@@ -72,7 +72,7 @@ def proximo_pedido(db: Session) -> Pedido | None:
         db.query(Pedido)
         .filter(
             Pedido.status == "PRONTO",
-            Pedido.origem == "PWA",
+            Pedido.origem == "PWA_CLIENTE",
             _na_fila(),
         )
         .order_by(
@@ -89,7 +89,7 @@ def _proxima_posicao_fila(db: Session) -> int:
         db.query(func.max(Pedido.painel_fila_posicao))
         .filter(
             Pedido.status == "PRONTO",
-            Pedido.origem == "PWA",
+            Pedido.origem == "PWA_CLIENTE",
             _na_fila(),
         )
         .scalar()
@@ -156,7 +156,7 @@ def expirar_exibicao(db: Session, pedido_id: int) -> Pedido | None:
         .filter(
             Pedido.id == pedido_id,
             Pedido.status == "PRONTO",
-            Pedido.origem == "PWA",
+            Pedido.origem == "PWA_CLIENTE",
             Pedido.painel_status == PAINEL_EXIBINDO,
         )
         .first()
@@ -212,7 +212,7 @@ async def _tarefa_expirar_exibicao(pedido_id: int) -> None:
             ainda_exibindo = (
                 pedido is not None
                 and pedido.status == "PRONTO"
-                and pedido.origem == "PWA"
+                and pedido.origem == "PWA_CLIENTE"
                 and pedido.painel_status == PAINEL_EXIBINDO
             )
             proximo = expirar_exibicao(db, pedido_id) if ainda_exibindo else None

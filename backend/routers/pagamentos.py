@@ -94,11 +94,18 @@ async def declarar_pagamento(pedido_id: int, db: Session = Depends(get_db)):
     App Mobile via WebSocket (pagamento_declarado).
     """
     pedido = _obter_pedido(pedido_id, db)
+    # Pedido em estado terminal não aceita declaração — "já paguei" num
+    # pedido cancelado/entregue geraria um aviso fantasma no admin
+    if pedido.status in ("CANCELADO", "ENTREGUE"):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Pedido {pedido.status.lower()} — não é mais possível declarar pagamento",
+        )
     pedido.pagamento_declarado_em = datetime.now(UTC)
     db.commit()
     db.refresh(pedido)
     await manager.send_to_client(
-        "app_mobile",
+        "pwa_admin",
         websocket_event("pagamento_declarado", {"pedido_id": pedido.id}),
     )
     return {

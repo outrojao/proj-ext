@@ -1,0 +1,1757 @@
+/* ── Fontes locais (arquivos em assets/fonts, sem CDN) ── */
+
+@font-face {
+  font-family: "Archivo Black";
+  src: url("../assets/fonts/archivo-black-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("../assets/fonts/inter-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("../assets/fonts/inter-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("../assets/fonts/inter-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("../assets/fonts/inter-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================================================
+   IDENTIDADE VISUAL — ALTERE APENAS AQUI
+   Troque cores, fontes, background e raios para re-tematizar
+   o app inteiro. Não use valores literais fora deste bloco.
+   (Mesma marca do PWA do cliente — LutzGrill.)
+   ============================================================ */
+:root {
+  /* Cores — paleta da marca:
+     #BF2431 (vermelho) · #F2A20C (âmbar) · #A6610D (âmbar escuro) · #400101 (marrom-escuro) */
+  --cor-primaria: #bf2431;          /* vermelho — CTAs, destaque */
+  --cor-primaria-hover: #971f2a;    /* derivada: vermelho escurecido */
+  --cor-primaria-texto: #ffffff;    /* texto sobre a cor primária */
+  --cor-secundaria: #f2a20c;        /* âmbar — alerta, destaques secundários */
+  --cor-secundaria-texto: #400101;  /* texto sobre o âmbar */
+  --cor-secundaria-hover: #a6610d;  /* âmbar escuro — hover de elementos âmbar */
+  --cor-fundo: #fdf6ef;             /* derivada: creme quente */
+  --cor-superficie: #ffffff;        /* cards, barras, modais */
+  --cor-texto: #400101;             /* marrom-escuro — texto principal */
+  --cor-texto-suave: #a6610d;       /* âmbar escuro — texto secundário */
+  --cor-borda: #f0e2d4;             /* derivada: borda quente */
+  --cor-sucesso: #2b8a3e;           /* semântica (fora da paleta); contraste AA com texto branco */
+  --cor-alerta: #f2a20c;            /* âmbar */
+  --cor-erro: #bf2431;              /* vermelho */
+  --cor-skeleton: #f6ece1;          /* derivada: fundo de skeleton */
+
+  /* Background opcional (deixe 'none' para fundo liso) */
+  --bg-imagem: none;
+  --bg-imagem-posicao: center top;
+  --bg-imagem-repeat: no-repeat;
+
+  /* Tipografia */
+  --fonte: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fonte-display: 'Archivo Black', var(--fonte);
+  --tamanho-base: 16px;
+
+  /* Forma e profundidade */
+  --raio: 14px;
+  --raio-pill: 999px;
+  --sombra: 0 1px 2px rgba(64, 1, 1, 0.04), 0 8px 24px rgba(64, 1, 1, 0.06); /* derivada do marrom-escuro */
+
+  /* Espaçamento base (escala em múltiplos de 4px) */
+  --esp: 16px;
+}
+
+/* ── Reset / base ── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* O atributo hidden precisa vencer qualquer display declarado
+   (senão banners/barras "ocultas" pelo JS continuam visíveis). */
+[hidden] {
+  display: none !important;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+  overscroll-behavior-y: none;
+}
+
+body {
+  margin: 0;
+  font-family: var(--fonte);
+  font-size: var(--tamanho-base);
+  line-height: 1.5;
+  color: var(--cor-texto);
+  background-color: var(--cor-fundo);
+  background-image: var(--bg-imagem);
+  background-position: var(--bg-imagem-posicao);
+  background-repeat: var(--bg-imagem-repeat);
+  min-height: 100vh;
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+img {
+  max-width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+h1,
+h2 {
+  margin: 0;
+  line-height: 1.2;
+}
+
+p {
+  margin: 0.5rem 0;
+}
+
+button {
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--cor-skeleton);
+  padding: 1px 5px;
+  border-radius: 6px;
+}
+
+/* ── Acessibilidade ── */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pular {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--cor-primaria);
+  color: var(--cor-primaria-texto);
+  padding: 12px 16px;
+  border-radius: 0 0 var(--raio) 0;
+}
+
+.pular:focus {
+  left: 0;
+}
+
+:focus-visible {
+  outline: 3px solid var(--cor-primaria);
+  outline-offset: 2px;
+}
+
+/* ── Banners ── */
+
+.banner {
+  padding: 10px var(--esp);
+  text-align: center;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.banner-offline {
+  background: var(--cor-alerta);
+  color: var(--cor-texto);
+}
+
+.banner-http {
+  background: var(--cor-erro);
+  color: var(--cor-primaria-texto);
+  font-weight: 600;
+}
+
+.banner-demo {
+  background: var(--cor-texto);
+  color: var(--cor-primaria-texto);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+}
+
+.banner-instalacao {
+  background: var(--cor-superficie);
+  border-bottom: 1px solid var(--cor-borda);
+  box-shadow: var(--sombra);
+}
+
+.banner-acoes {
+  display: inline-flex;
+  gap: 8px;
+}
+
+/* ── Header ── */
+
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px var(--esp);
+  padding-top: max(10px, env(safe-area-inset-top));
+  background: var(--cor-superficie);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.logo {
+  height: 32px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+/* Uppercase: a fonte display renderiza minúsculas como small caps */
+.nome-loja {
+  font-family: var(--fonte-display);
+  font-size: 1.3rem;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chip-conexao {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 4px 10px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-skeleton);
+  color: var(--cor-texto-suave);
+}
+
+.chip-conexao-ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-texto-suave);
+}
+
+.chip-conexao.conectado {
+  background: color-mix(in srgb, var(--cor-sucesso) 14%, var(--cor-superficie));
+  color: var(--cor-sucesso);
+}
+
+.chip-conexao.conectado .chip-conexao-ponto {
+  background: var(--cor-sucesso);
+}
+
+.chip-conexao.reconectando {
+  background: color-mix(in srgb, var(--cor-alerta) 22%, var(--cor-superficie));
+  color: var(--cor-secundaria-hover);
+}
+
+.chip-conexao.reconectando .chip-conexao-ponto {
+  background: var(--cor-alerta);
+}
+
+/* Sem fundo/borda: só o ícone de som (o anel de foco global continua
+   marcando o botão para navegação por teclado). */
+.btn-som {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--cor-texto);
+  min-height: 44px;
+  min-width: 44px;
+  padding: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.btn-som[aria-pressed="false"] {
+  opacity: 0.5;
+}
+
+/* ── Abas ── */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px var(--esp) 0;
+  background: var(--cor-superficie);
+  border-bottom: 1px solid var(--cor-borda);
+  position: sticky;
+  top: 52px;
+  z-index: 19;
+}
+
+.tab {
+  position: relative;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  background: none;
+  color: var(--cor-texto-suave);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 12px 8px;
+  min-height: 48px;
+  border-bottom: 3px solid transparent;
+}
+
+.tab[aria-current="page"] {
+  color: var(--cor-primaria);
+  border-bottom-color: var(--cor-primaria);
+}
+
+.badge-contagem {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-primaria);
+  color: var(--cor-primaria-texto);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Layout principal ── */
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--esp);
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+.view {
+  position: relative;
+  animation: aparecer 180ms ease-out;
+}
+
+h1 {
+  font-family: var(--fonte-display);
+  font-size: clamp(1.5rem, 6vw, 1.9rem);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--cor-texto);
+  margin: 0;
+}
+
+/* Uppercase sempre: a fonte display só tem glifos de maiúsculo (as
+   "minúsculas" dela são small caps — "Adicionais" renderizava como
+   "AdIcIonais"). Mesma regra do h1 e dos cabeçalhos de seção. */
+.titulo-bloco {
+  font-family: var(--fonte-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  margin: var(--esp) 0 8px;
+  color: var(--cor-texto);
+}
+
+.texto-centro {
+  text-align: center;
+}
+
+.texto-suave {
+  color: var(--cor-texto-suave);
+}
+
+.view-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: var(--esp);
+}
+
+.view-cabecalho h1 {
+  flex: 1;
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Botões ── */
+
+.btn-primario {
+  background: var(--cor-primaria);
+  color: var(--cor-primaria-texto);
+  border: none;
+  border-radius: var(--raio-pill);
+  padding: 14px 20px;
+  min-height: 48px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  width: 100%;
+}
+
+.btn-primario:active:not(:disabled) {
+  background: var(--cor-primaria-hover);
+}
+
+@media (hover: hover) {
+  .btn-primario:hover:not(:disabled) {
+    background: var(--cor-primaria-hover);
+  }
+}
+
+.btn-primario:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-suave {
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pill);
+  padding: 10px 16px;
+  min-height: 44px;
+  font-weight: 600;
+  width: auto;
+}
+
+.btn-suave:active {
+  transform: translateY(1px);
+}
+
+@media (hover: hover) {
+  .btn-suave:hover:not(:disabled) {
+    border-color: var(--cor-primaria);
+    color: var(--cor-primaria);
+  }
+}
+
+.btn-mini {
+  padding: 8px 12px;
+  min-height: 40px;
+  font-size: 0.9rem;
+}
+
+/* ── Skeleton / estados ── */
+
+.skeleton-caixa {
+  display: grid;
+  gap: 12px;
+}
+
+.skeleton-caixa::before,
+.skeleton-caixa::after {
+  content: "";
+  height: 96px;
+  border-radius: var(--raio);
+  background: var(--cor-skeleton);
+  animation: pulsar 1.2s ease-in-out infinite;
+}
+
+.skeleton-caixa::after {
+  animation-delay: 0.2s;
+}
+
+.skeleton-msg {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave);
+}
+
+@keyframes pulsar {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.estado {
+  text-align: center;
+  padding: 32px var(--esp);
+  color: var(--cor-texto-suave);
+}
+
+.estado .btn-primario {
+  margin-top: 12px;
+  width: auto;
+  display: inline-block;
+  padding-inline: 28px;
+}
+
+.estado-centro {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 48px var(--esp);
+}
+
+.estado-secao {
+  margin: 0;
+  padding: 14px 8px;
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+  text-align: center;
+}
+
+/* ── Atendimento: seções e cards de pedido ── */
+
+.painel-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.secao-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.secao-cabecalho h2 {
+  font-family: var(--fonte-display);
+  font-weight: 400;
+  font-size: 1.02rem;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.contagem {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-skeleton);
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.contagem.chamada {
+  background: var(--cor-primaria);
+  color: var(--cor-primaria-texto);
+}
+
+.lista-pedidos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+
+.pedido-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: 12px;
+  box-shadow: var(--sombra);
+  animation: aparecer 200ms ease-out both;
+}
+
+.pedido-card.declarado {
+  border-color: var(--cor-alerta);
+  background: color-mix(in srgb, var(--cor-alerta) 9%, var(--cor-superficie));
+}
+
+.pedido-card.exibindo {
+  border-color: var(--cor-sucesso);
+}
+
+/* Seções com faixa na base (preparo, pagamento, pronto): o botão vira uma
+   faixa que preenche o final do card — da borda à borda, colado na base
+   (o overflow: hidden corta os cantos inferiores no raio do card; a lateral
+   esquerda/direita do card tem padding 12px em todos os breakpoints, daí o
+   -12px). */
+#lista-preparo .pedido-card,
+#lista-pagamento .pedido-card,
+#lista-painel .pedido-card {
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+/* Em preparo e pronto a faixa "PEDIDO #N" também gruda no TOPO do card
+   (como a faixa de botões gruda na base): some o padding-top e os cantos
+   superiores são arredondados pelo overflow: hidden. */
+#lista-preparo .pedido-card,
+#lista-painel .pedido-card {
+  padding-top: 0;
+}
+
+#lista-preparo .pedido-card .pedido-ctas,
+#lista-pagamento .pedido-card .pedido-ctas,
+#lista-painel .pedido-card .pedido-ctas {
+  margin: 0 -12px;
+}
+
+/* Faixa de cantos retos (o overflow: hidden ancora os cantos inferiores
+   no raio do card). */
+#lista-preparo .pedido-card .btn-primario,
+#lista-pagamento .pedido-card .btn-primario,
+#lista-painel .pedido-card .btn-primario {
+  border-radius: 0;
+}
+
+/* O anel de foco vai por dentro do botão (colado nas bordas do card, o
+   overflow: hidden cortaria a parte externa do outline); branco, porque
+   o anel vermelho global sumiria sobre o fundo vermelho do botão. */
+#lista-preparo .pedido-card .btn-primario:focus-visible,
+#lista-pagamento .pedido-card .btn-primario:focus-visible,
+#lista-painel .pedido-card .btn-primario:focus-visible {
+  outline-offset: -4px;
+  outline-color: var(--cor-primaria-texto);
+}
+
+/* Sem gap no layout base o nome do cliente gruda na lista de itens
+   (aparecia "em cima" do resumo em janelas estreitas). */
+.pedido-corpo {
+  display: grid;
+  gap: 8px;
+}
+
+.pedido-linha {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  /* "PEDIDO <n>" em fonte grande pode não caber com o total no card
+     estreito: o total desce para a linha de baixo em vez de cortar. */
+  flex-wrap: wrap;
+}
+
+.pedido-nome {
+  font-weight: 700;
+  font-size: 1rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pedido-total {
+  font-family: var(--fonte-display);
+  font-size: 0.95rem;
+  color: var(--cor-primaria);
+  white-space: nowrap;
+}
+
+.pedido-resumo {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+  white-space: pre-line; /* itens do pedido, um por linha (resumoItens) */
+}
+
+.pedido-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  flex-shrink: 0;
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  border-radius: var(--raio-pill);
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.chip-declarado {
+  border-color: var(--cor-alerta);
+  background: color-mix(in srgb, var(--cor-alerta) 18%, var(--cor-superficie));
+  color: var(--cor-secundaria-hover);
+  font-weight: 700;
+}
+
+.chip-painel {
+  border-color: var(--cor-sucesso);
+  background: color-mix(in srgb, var(--cor-sucesso) 12%, var(--cor-superficie));
+  color: var(--cor-sucesso);
+  font-weight: 700;
+}
+
+.etiqueta {
+  display: inline-block;
+  border-radius: var(--raio-pill);
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.etiqueta-pendente {
+  background: color-mix(in srgb, var(--cor-alerta) 22%, var(--cor-superficie));
+  color: var(--cor-secundaria-hover);
+}
+
+.etiqueta-confirmado {
+  background: var(--cor-skeleton);
+  color: var(--cor-texto-suave);
+}
+
+.etiqueta-pago {
+  background: color-mix(in srgb, var(--cor-primaria) 14%, var(--cor-superficie));
+  color: var(--cor-primaria);
+}
+
+.etiqueta-pronto {
+  background: color-mix(in srgb, var(--cor-sucesso) 14%, var(--cor-superficie));
+  color: var(--cor-sucesso);
+}
+
+.etiqueta-entregue {
+  background: var(--cor-skeleton);
+  color: var(--cor-texto-suave);
+}
+
+.etiqueta-cancelado {
+  background: color-mix(in srgb, var(--cor-erro) 14%, var(--cor-superficie));
+  color: var(--cor-erro);
+}
+
+.pedido-ctas {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pedido-ctas .btn-primario,
+.pedido-ctas .btn-suave {
+  flex: 1;
+  min-width: 120px;
+  width: auto;
+}
+
+.btn-perigo {
+  background: var(--cor-superficie);
+  color: var(--cor-erro);
+  border: 1px solid var(--cor-erro);
+  border-radius: var(--raio-pill);
+  padding: 10px 16px;
+  min-height: 44px;
+  font-weight: 700;
+}
+
+@media (hover: hover) {
+  .btn-perigo:hover:not(:disabled) {
+    background: var(--cor-erro);
+    color: var(--cor-primaria-texto);
+  }
+}
+
+/* Certinho/X do card "Novos": cada botão já nasce com a cor da ação
+   (verde = aceitar, vermelho = rejeitar). Juntos formam a faixa de
+   ações do card (grudada na base, ver regras do #lista-novos):
+   por isso sem raio — a aresta interna fica reta e o overflow: hidden
+   do card roda os cantos externos. O hover escurece o fundo. */
+.btn-icone {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-width: 64px;
+  min-height: 44px;
+  padding: 8px;
+  border: none;
+  border-radius: 0;
+  color: var(--cor-primaria-texto);
+}
+
+.btn-icone-aceitar {
+  background: var(--cor-sucesso);
+}
+
+.btn-icone-rejeitar {
+  background: var(--cor-erro);
+}
+
+/* "Editar" do cardápio: cinza (marrom-escuro da marca) */
+.btn-icone-editar {
+  background: var(--cor-texto);
+}
+
+.btn-icone svg {
+  width: 28px;
+  height: 28px;
+}
+
+.btn-icone:disabled {
+  opacity: 0.5;
+}
+
+@media (hover: hover) {
+  .btn-icone-aceitar:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--cor-sucesso) 85%, #000);
+  }
+
+  .btn-icone-rejeitar:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--cor-erro) 85%, #000);
+  }
+
+  .btn-icone-editar:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--cor-texto) 85%, #000);
+  }
+}
+
+/* Card "Novos": a faixa de ações gruda na BASE do card, da borda à
+   borda (padding-bottom: 0 + margem negativa horizontal, mesma receita
+   da faixa "Pronto" do preparo); a aresta superior fica reta e os
+   cantos inferiores no raio do card. Vale em todos os tamanhos (o card
+   é vertical em todos). */
+#lista-novos .pedido-card {
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+/* A coluna do grid do corpo não pode dimensionar pelo max-content dos
+   filhos: a linha nome+total dá ~222px e transbordava o card nas colunas
+   estreitas do kanban, cortando o chip "Horário" pela borda. minmax(0,1fr)
+   prende a coluna à largura do card — o nome já tem ellipsis e os chips
+   quebram linha se apertarem. Escopado a Novos (as outras seções seguem
+   como estão). */
+#lista-novos .pedido-card .pedido-corpo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#lista-novos .pedido-card .pedido-ctas {
+  gap: 0;
+  margin: 0 -12px;
+}
+
+/* O anel de foco fica por dentro do botão (colado nas bordas do card,
+   o overflow: hidden cortaria a parte externa do outline); branco,
+   porque o anel vermelho global sumiria sobre o fundo verde/vermelho. */
+#lista-novos .pedido-card .btn-icone:focus-visible {
+  outline-offset: -4px;
+  outline-color: var(--cor-primaria-texto);
+}
+
+.numero-grande {
+  font-family: var(--fonte-display);
+  font-size: 2.2rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-primaria);
+}
+
+/* O número sozinho era ambíguo (parecia quantidade de itens): rotula em
+   CIMA ("PEDIDO" acima de "11") — e não na frente, porque na linha
+   estreita do card o rótulo ao lado empurrava o total para fora do card.
+   Absoluto para não contar na largura da linha. Escopado a .pedido-linha
+   (cards de preparo e painel); a view de retirada não muda — já tem
+   rótulo "Número" próprio. */
+/* O par "PEDIDO <número>" é UMA informação: o rótulo herda fonte,
+   tamanho e cor do próprio número (mesma linha, mesma métrica). O texto
+   é claro sobre o âmbar, mas não branco puro: o creme da paleta
+   (--cor-fundo) é o "branco quente" da marca e suaviza o contraste
+   que o #400101 antigo deixava pesado. */
+.pedido-linha .numero-grande {
+  color: var(--cor-fundo);
+}
+
+/* O espaço fica DENTRO do content (entre "PEDIDO" e "#N"), então o #
+   fica colado ao número, sem gap. */
+.pedido-linha .numero-grande::before {
+  content: "Pedido #";
+  text-transform: uppercase;
+}
+
+/* A linha do número vira uma FAIXA de borda a borda — mesma receita das
+   faixas de botões: a margem negativa cancela o padding de 12px do card
+   e o par fica centralizado. O fundo é o âmbar da marca (--cor-secundaria)
+   — a cor principal que não é o vermelho; o creme ficou sem presença.
+   A linha de identidade (nome + total) segue space-between e sem faixa. */
+.pedido-linha:has(.numero-grande) {
+  justify-content: center;
+  margin: 0 -12px;
+  background: var(--cor-secundaria);
+  padding: 10px 0;
+}
+
+.senha-blocos {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.senha-tecla {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 48px;
+  border: 2px solid var(--cor-primaria);
+  border-radius: 10px;
+  background: var(--cor-superficie);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* ── Retirada ── */
+
+.retirada-grid {
+  display: grid;
+  gap: 16px;
+}
+
+#form-retirada {
+  display: grid;
+  gap: 4px;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: var(--esp);
+  box-shadow: var(--sombra);
+}
+
+.retirada-acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.retirada-acoes .btn-primario {
+  flex: 1;
+}
+
+.campo {
+  margin-top: var(--esp);
+}
+
+#form-retirada .campo,
+.form-item .campo {
+  margin-top: 8px;
+}
+
+.campo label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.campo input[type="text"],
+.campo input[type="url"] {
+  width: 100%;
+  font-family: inherit;
+  font-size: 16px; /* impede zoom automático do iOS ao focar */
+  padding: 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+}
+
+.campo input:focus {
+  border-color: var(--cor-primaria);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--cor-borda);
+}
+
+.campo input[aria-invalid="true"] {
+  border-color: var(--cor-erro);
+}
+
+/* Mensagem de erro do form: caixa dedicada (não confundir com o texto neutro) */
+.mensagem-erro {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--cor-erro);
+  border-radius: var(--raio);
+  background: #f9e4e7; /* derivada de --cor-erro */
+  color: var(--cor-erro);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.campo-linha {
+  display: grid;
+  gap: 0 12px;
+}
+
+.campo-check {
+  margin-top: 8px;
+}
+
+/* Imagem por arquivo: botão + nome do arquivo escolhido (sem preview) */
+.campo-imagem-arquivo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nome-arquivo-imagem {
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+  max-width: 220px;
+  word-break: break-all;
+}
+
+.linha-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  margin: 0;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.linha-check input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--cor-primaria);
+}
+
+.retirada-resultado {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.retirada-card {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: var(--esp);
+  box-shadow: var(--sombra);
+}
+
+.retirada-card .numero-grande {
+  font-size: 3rem;
+}
+
+.retirada-card .senha-tecla {
+  width: 52px;
+  height: 62px;
+  font-size: 2rem;
+}
+
+.rotulo-campo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.retirada-nome {
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+
+.retirada-resumo {
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+  margin: 0;
+}
+
+.retirada-card .btn-primario {
+  margin-top: 6px;
+}
+
+/* ── Cardápio (admin) ── */
+
+.lista-itens-admin {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.item-card-admin {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 12px;
+  align-items: start;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: 12px;
+  box-shadow: var(--sombra);
+  /* A faixa de ações (editar/remover) gruda na base, da borda à borda:
+     overflow: hidden + padding-bottom: 0 (mesma receita do card "Novos") */
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.item-card-admin.indisponivel {
+  opacity: 0.65;
+}
+
+.item-media-admin {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--cor-borda);
+}
+
+.item-media-admin-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cor-skeleton);
+  color: var(--cor-texto-suave);
+  font-family: var(--fonte-display);
+  font-size: 1.3rem;
+  letter-spacing: 0.04em;
+}
+
+.item-info-admin {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.item-topo-admin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.item-nome-admin {
+  font-weight: 700;
+  font-size: 1.02rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-desc-admin {
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.item-preco-admin {
+  font-family: var(--fonte-display);
+  font-size: 0.95rem;
+  color: var(--cor-primaria);
+  white-space: nowrap;
+}
+
+.item-acoes-admin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Faixa de ações na base do card (mesma receita do card "Novos"):
+   margem negativa = padding horizontal do card (da borda à borda),
+   sem gap — editar e remover dividem o fundo lado a lado. O .btn-icone
+   base já vem com flex:1 e sem raio (aresta superior reta, cantos
+   inferiores arredondados pelo overflow: hidden do card). */
+.item-ctas-admin {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0;
+  margin: 0 -12px;
+}
+
+/* Anel de foco por dentro (o overflow: hidden cortaria o outline) —
+   branco, porque o anel global someria sobre o fundo escuro/vermelho */
+.item-ctas-admin .btn-icone:focus-visible {
+  outline-offset: -4px;
+  outline-color: var(--cor-primaria-texto);
+}
+
+/* Linha de adicional no form: X compacto, mesmo padrão dos cards */
+.adicial-form .btn-icone {
+  flex: 0 0 auto;
+  width: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: var(--raio-pill);
+}
+
+.adicial-form .btn-icone svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Adicional: sub-entrada sob o item-base no cardápio. Sem coluna de
+   imagem (o adicional não tem): a info ocupa a largura toda */
+.item-card-admin.item-adicional {
+  grid-template-columns: 1fr;
+  margin-left: 28px;
+  background: var(--cor-fundo);
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.item-adicional-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cor-texto-suave);
+  background: var(--cor-skeleton);
+  border-radius: var(--raio-pill);
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+/* Toggle (switch) de disponibilidade */
+.toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+
+.toggle-trilho {
+  width: 44px;
+  height: 26px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-skeleton);
+  border: 1px solid var(--cor-borda);
+  position: relative;
+  transition: background 150ms ease-out;
+  flex-shrink: 0;
+}
+
+.toggle-trilho::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra);
+  transition: transform 150ms ease-out;
+}
+
+.toggle input:checked + .toggle-trilho {
+  background: var(--cor-sucesso);
+  border-color: var(--cor-sucesso);
+}
+
+.toggle input:checked + .toggle-trilho::after {
+  transform: translateX(18px);
+}
+
+.toggle input:focus-visible + .toggle-trilho {
+  outline: 3px solid var(--cor-primaria);
+  outline-offset: 2px;
+}
+
+.toggle-rotulo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+}
+
+/* Form de item */
+.form-item {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: var(--esp);
+  box-shadow: var(--sombra);
+  margin-bottom: var(--esp);
+}
+
+.erro-form {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--cor-erro);
+}
+
+.form-acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: var(--esp);
+}
+
+.form-acoes .btn-primario {
+  flex: 1;
+}
+
+/* ── Modais ── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  padding: var(--esp);
+  background: color-mix(in srgb, var(--cor-texto) 55%, transparent);
+}
+
+.modal-painel {
+  width: min(520px, 100%);
+  max-height: min(84dvh, 720px);
+  overflow-y: auto;
+  background: var(--cor-superficie);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: var(--esp);
+  animation: aparecer 150ms ease-out;
+}
+
+.modal-painel-pequena {
+  width: min(400px, 100%);
+}
+
+.modal-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.modal-cabecalho h2 {
+  font-family: var(--fonte-display);
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.btn-fechar-modal {
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--raio-pill);
+  font-size: 1rem;
+}
+
+.modal-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: var(--esp);
+}
+
+.modal-acoes .btn-primario,
+.modal-acoes .btn-suave,
+.modal-acoes .btn-perigo {
+  flex: 1;
+  min-width: 130px;
+  width: auto;
+}
+
+/* Seção de adicionais dentro do form de item */
+.secao-adicionais {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--cor-borda);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.lista-adicionais-form {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.adicial-form {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: 8px 10px;
+}
+
+.adicial-form-info {
+  flex: 1;
+  min-width: 120px;
+  font-size: 0.9rem;
+}
+
+.campo-adicionar-adicional {
+  align-items: end;
+  /* botão "Adicionar" quebra linha em telas largas: não cola no input */
+  row-gap: 12px;
+}
+
+.campo-adicionar-adicional .btn-suave {
+  min-height: 44px;
+  /* margem no item do grid (estica a última linha da seção): separa o
+     "Adicionar" do SALVAR sem colidir com o margin-top da faixa de CTA
+     (margens de irmãos colapsariam) */
+  margin-bottom: 12px;
+}
+
+/* Corpo do detalhe */
+.detalhe-status {
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.detalhe-par {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--cor-borda);
+  font-size: 0.95rem;
+}
+
+.detalhe-par span:first-child {
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+}
+
+.detalhe-itens {
+  list-style: none;
+  margin: 10px 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.detalhe-itens li {
+  display: grid;
+  gap: 2px;
+  font-size: 0.95rem;
+}
+
+.detalhe-linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Adicional da linha (nome + preço), com o valor somado à linha */
+.detalhe-adicional {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-left: 16px;
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+}
+
+.detalhe-total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  padding-top: 8px;
+  border-top: 2px solid var(--cor-borda);
+}
+
+.detalhe-total .valor {
+  font-family: var(--fonte-display);
+  color: var(--cor-primaria);
+}
+
+/* ── Tela 401 ── */
+
+.tela-erro-401 {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--cor-fundo);
+  display: grid;
+  place-items: center;
+  padding: var(--esp);
+}
+
+/* ── Toasts ── */
+
+.toasts {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  z-index: 80;
+  display: grid;
+  gap: 8px;
+  width: min(480px, calc(100% - 32px));
+}
+
+.toast {
+  padding: 12px 16px;
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  background: var(--cor-texto);
+  color: var(--cor-primaria-texto);
+  text-align: center;
+  font-size: 0.9rem;
+  animation: aparecer 150ms ease-out;
+}
+
+.toast-sucesso {
+  background: var(--cor-sucesso);
+}
+
+.toast-erro {
+  background: var(--cor-erro);
+}
+
+/* ============================================================
+   PORTS — mobile / tablet / desktop
+   ============================================================ */
+
+/* Tablet (600–1023 px): 2 colunas de seções */
+@media (min-width: 600px) {
+  main {
+    max-width: 960px;
+  }
+
+  .painel-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+
+  .retirada-grid {
+    grid-template-columns: minmax(260px, 380px) 1fr;
+    align-items: start;
+  }
+
+  .campo-linha {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .lista-itens-admin {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+/* Desktop (>=1024 px): dashboard kanban em 4 colunas */
+@media (min-width: 1024px) {
+  main {
+    max-width: 1200px;
+  }
+
+  .painel-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .secao-pedidos {
+    background: var(--cor-fundo);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio);
+    padding: 10px;
+  }
+
+  .secao-cabecalho {
+    position: sticky;
+    top: 108px;
+    background: var(--cor-fundo);
+    padding: 4px 2px;
+    z-index: 2;
+  }
+
+  /* Card compacto horizontal: identidade à esquerda, CTAs à direita */
+  .pedido-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+  }
+
+  .pedido-corpo {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 8px;
+  }
+
+  /* Botão na base do card (posição original). */
+  .pedido-ctas {
+    flex-direction: column;
+    flex-shrink: 0;
+    min-width: 128px;
+    align-self: flex-end;
+  }
+
+  /* Todas as seções: card vertical — o conteúdo ocupa a largura toda e a
+     faixa de ações desce para a base do card, grudada (mesma estrutura nas
+     4 colunas; os layouts horizontais antigos de pagamento/painel saem e o
+     caso especial do card ".declarado" deixa de ser especial). */
+  #lista-novos .pedido-card,
+  #lista-pagamento .pedido-card,
+  #lista-preparo .pedido-card,
+  #lista-painel .pedido-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #lista-novos .pedido-card .pedido-ctas,
+  #lista-pagamento .pedido-card .pedido-ctas,
+  #lista-preparo .pedido-card .pedido-ctas,
+  #lista-painel .pedido-card .pedido-ctas {
+    align-self: stretch;
+    flex-direction: row;
+    min-width: 0;
+  }
+
+  .numero-grande {
+    font-size: 1.6rem;
+  }
+
+  /* O par "PEDIDO #N" em 1.6rem tem ~173px de texto + padding — passa do
+     card mais estreito do kanban (~170px) e quebrava em duas linhas.
+     1.3rem mantém os dois elementos com MESMO tamanho entre si e cabe em
+     uma linha até a coluna mais apertada. */
+  .pedido-linha .numero-grande {
+    font-size: 1.3rem;
+  }
+
+  .senha-tecla {
+    width: 32px;
+    height: 38px;
+    font-size: 1.1rem;
+    border-width: 1px;
+  }
+
+  .retirada-grid {
+    grid-template-columns: minmax(300px, 420px) 1fr;
+  }
+
+  .retirada-card .numero-grande {
+    font-size: 4rem;
+  }
+
+  .retirada-card .senha-tecla {
+    width: 64px;
+    height: 76px;
+    font-size: 2.5rem;
+  }
+
+  .lista-itens-admin {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ── Movimento reduzido ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .view,
+  .pedido-card,
+  .modal-painel,
+  .toast {
+    animation: none;
+  }
+
+  .btn-primario:active,
+  .btn-suave:active {
+    transform: none;
+  }
+
+  .toggle-trilho,
+  .toggle-trilho::after {
+    transition: none;
+  }
+}
