@@ -4,7 +4,7 @@ export const CONFIG = {
   // Para produção, troque pelos valores abaixo (e a chave real no .env do backend):
   // API_BASE: "https://proj-ext-api.onrender.com",
   // API_KEY: "sua-chave-aqui",       // API_KEY_PWA_ADMIN do .env do backend (PRIVILEGIADA)
-  API_BASE: "http://localhost:8000",
+  API_BASE: "https://proj-ext-api.onrender.com",
   API_KEY: "TyDGPJlUNXPfQqLaXORcWaUYbrMhxxE2",
   NOME_LOJA: "LutzGrill",
 

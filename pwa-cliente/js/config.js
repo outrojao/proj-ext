@@ -4,7 +4,7 @@ export const CONFIG = {
   // Para produção, troque pelos valores abaixo:
   // API_BASE: "https://proj-ext-api.onrender.com",
   // API_KEY: "sua-chave-pwa-cliente-aqui",
-  API_BASE: "http://localhost:8000",
+  API_BASE: "https://proj-ext-api.onrender.com",
   API_KEY: "ETN1dw1lw5FU4oIL3Bwd7ntuW4wI7nIc",
   NOME_LOJA: "LutzGrill",
 
