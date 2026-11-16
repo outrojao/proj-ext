@@ -54,7 +54,7 @@ test("fluxo demo completo: itens → pedido → confirmação → Pix → PAGO (
   });
 
   const itens = await apiGet("/itens");
-  assert.equal(itens.length, 5);
+  assert.equal(itens.length, 7); // 5 bases + 2 adicionais (X-Burger)
   assert.ok(itens.every((i) => i.disponivel === true));
 
   const pedido = await apiPost("/pedidos", {
@@ -139,6 +139,56 @@ test("demo: pagamento funciona após recarregar a página (estado persiste)", as
   const restaurado = await apiGet(`/pedidos/${pedido.id}`);
   assert.equal(restaurado.id, pedido.id);
   assert.equal(restaurado.total, 16);
+});
+
+test("demo: adicionais somam no total e observação persiste", async (t) => {
+  CONFIG.MODO_DEMO = true;
+  CONFIG.DEMO_CONFIRMAR_MS = 60_000; // não confirma durante o teste
+  _demoReset();
+  t.after(() => {
+    CONFIG.MODO_DEMO = false;
+    CONFIG.DEMO_CONFIRMAR_MS = 6000;
+    _demoReset();
+  });
+
+  const pedido = await apiPost("/pedidos", {
+    itens: [
+      { item_id: 1, quantidade: 1, adicionais: [{ item_id: 6, quantidade: 1 }] },
+      { item_id: 3, quantidade: 1 } // refrigerante: linha sem adicionais
+    ],
+    horario_agendamento: "19:30",
+    nome_cliente: "João",
+    observacao: "Sem cebola, por favor"
+  });
+  assert.equal(pedido.total, 23); // 15 + 2 (adicional) + 6
+  assert.equal(pedido.origem, "PWA_CLIENTE");
+  assert.equal(pedido.observacao, "Sem cebola, por favor");
+  assert.equal(pedido.itens[0].adicionais.length, 1);
+  assert.equal(pedido.itens[1].adicionais, undefined);
+
+  const atual = await apiGet(`/pedidos/${pedido.id}`);
+  assert.equal(atual.total, 23);
+  assert.equal(atual.observacao, "Sem cebola, por favor");
+});
+
+test("demo: adicional inexistente é rejeitado (400)", async (t) => {
+  CONFIG.MODO_DEMO = true;
+  CONFIG.DEMO_CONFIRMAR_MS = 60_000;
+  _demoReset();
+  t.after(() => {
+    CONFIG.MODO_DEMO = false;
+    CONFIG.DEMO_CONFIRMAR_MS = 6000;
+    _demoReset();
+  });
+
+  await assert.rejects(
+    () =>
+      apiPost("/pedidos", {
+        itens: [{ item_id: 1, quantidade: 1, adicionais: [{ item_id: 999, quantidade: 1 }] }],
+        horario_agendamento: "19:30"
+      }),
+    (e) => e instanceof ErroApi && e.status === 400
+  );
 });
 
 test("demo: declarar-pagamento não muda o status", async (t) => {

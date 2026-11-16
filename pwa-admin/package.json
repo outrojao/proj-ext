@@ -1,0 +1,6 @@
+{
+  "name": "pwa-admin",
+  "private": true,
+  "type": "module",
+  "description": "PWA do atendente (Sistema de Pedidos). Testes: node --test testes/"
+}

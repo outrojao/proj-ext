@@ -1,16 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { validarSessao, montarSessao, maxAgeCookie } from "../js/state.js";
+import { validarSessao, montarSessao, maxAgeCookie, temIdentificacao } from "../js/state.js";
 
 const AGORA = 1_000_000;
 
 test("sessão dentro do TTL é válida", () => {
-  assert.equal(validarSessao({ ts: AGORA - 299_000 }, AGORA), true);
+  assert.equal(validarSessao({ ts: AGORA - 1_199_000 }, AGORA), true);
   assert.equal(validarSessao({ ts: AGORA }, AGORA), true);
 });
 
-test("sessão além do TTL (5 min) é rejeitada", () => {
-  assert.equal(validarSessao({ ts: AGORA - 300_001 }, AGORA), false);
+test("sessão além do TTL (20 min) é rejeitada", () => {
+  assert.equal(validarSessao({ ts: AGORA - 1_200_001 }, AGORA), false);
   assert.equal(validarSessao({ ts: AGORA - 10_000_000 }, AGORA), false);
 });
 
@@ -29,7 +29,15 @@ test("montarSessao grava ts recente e preserva campos", () => {
   assert.deepEqual(payload.carrinho, []);
 });
 
-test("maxAgeCookie reflete o TTL de 5 min (300s)", () => {
-  assert.equal(maxAgeCookie(300_000), 300);
-  assert.equal(maxAgeCookie(), 300);
+test("maxAgeCookie reflete o TTL de 20 min (1200s)", () => {
+  assert.equal(maxAgeCookie(1_200_000), 1200);
+  assert.equal(maxAgeCookie(), 1200);
+});
+
+test("temIdentificacao: número e senha juntos (o backend gera atômico no PAGO)", () => {
+  assert.equal(temIdentificacao({ numero: 7, senha_retirada: "AB12" }), true);
+  assert.equal(temIdentificacao({ numero: 7, senha_retirada: null }), false);
+  assert.equal(temIdentificacao({ numero: null, senha_retirada: "AB12" }), false);
+  assert.equal(temIdentificacao({ numero: null, senha_retirada: null }), false);
+  assert.equal(temIdentificacao(null), false);
 });

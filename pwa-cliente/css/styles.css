@@ -246,10 +246,12 @@ button {
   flex-shrink: 0;
 }
 
+/* Uppercase: a fonte display renderiza minúsculas como small caps */
 .nome-loja {
   font-family: var(--fonte-display);
   font-size: 1.3rem;
   letter-spacing: 0.01em;
+  text-transform: uppercase;
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -315,10 +317,13 @@ h1 {
   margin: 0;
 }
 
+/* Uppercase sempre: a fonte display só tem glifos de maiúsculo (as
+   "minúsculas" dela são small caps). Mesma regra do h1. */
 .titulo-bloco {
   font-family: var(--fonte-display);
   font-weight: 400;
   letter-spacing: -0.01em;
+  text-transform: uppercase;
 }
 
 @keyframes aparecer {
@@ -358,6 +363,28 @@ h1 {
 
 .view-cabecalho h1 {
   flex: 1;
+}
+
+/* "Atualizar cardápio": ícone de reload, sem fundo nem borda */
+#btn-atualizar-cardapio {
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  background: none;
+  border: none;
+  border-radius: var(--raio);
+  color: var(--cor-texto-suave);
+}
+
+#btn-atualizar-cardapio svg {
+  width: 22px;
+  height: 22px;
+}
+
+@media (hover: hover) {
+  #btn-atualizar-cardapio:hover {
+    color: var(--cor-primaria);
+  }
 }
 
 .titulo-bloco {
@@ -452,6 +479,54 @@ h1 {
   gap: 12px;
 }
 
+/* Wrapper do grupo de categoria (acordeão): barra com a cor da
+   categoria (tile-0..3, idêntica à do tile dos itens). Clicar
+   abre/fecha; o chevron gira de ">" para baixo */
+.categoria-titulo {
+  margin: 0;
+}
+
+.categoria-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: var(--raio);
+  font-family: var(--fonte-display);
+  font-weight: 400;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Chevron desenhado em borda: fechado aponta ">", aberto gira p/ baixo */
+.categoria-toggle::after {
+  content: "";
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 150ms ease-out;
+}
+
+.categoria-toggle[aria-expanded="true"]::after {
+  transform: rotate(45deg);
+}
+
+.categoria-itens {
+  display: grid;
+  gap: 12px;
+  /* respiro entre o wrapper colorido e o primeiro card do grupo */
+  margin-top: 12px;
+}
+
 .item-card {
   display: grid;
   grid-template-columns: 72px 1fr auto;
@@ -485,23 +560,28 @@ h1 {
   letter-spacing: 0.04em;
 }
 
-/* Tiles coloridos por categoria (o JS aplica tile-0..3) */
-.item-media-placeholder.tile-0 {
+/* Cores por categoria (o JS aplica tile-0..3 no tile do item e no
+   wrapper do acordeão — mesma cor nos dois) */
+.item-media-placeholder.tile-0,
+.categoria-toggle.tile-0 {
   background: var(--cor-primaria);
   color: var(--cor-primaria-texto);
 }
 
-.item-media-placeholder.tile-1 {
+.item-media-placeholder.tile-1,
+.categoria-toggle.tile-1 {
   background: var(--cor-secundaria);
   color: var(--cor-secundaria-texto);
 }
 
-.item-media-placeholder.tile-2 {
+.item-media-placeholder.tile-2,
+.categoria-toggle.tile-2 {
   background: var(--cor-texto-suave);
   color: var(--cor-primaria-texto);
 }
 
-.item-media-placeholder.tile-3 {
+.item-media-placeholder.tile-3,
+.categoria-toggle.tile-3 {
   background: var(--cor-texto);
   color: var(--cor-primaria-texto);
 }
@@ -582,6 +662,47 @@ h1 {
   }
 }
 
+/* Adicionais do item: só aparece quando ele já está no carrinho */
+.item-adicionais {
+  grid-column: 2 / -1;
+  display: grid;
+  gap: 4px;
+  border-top: 1px dashed var(--cor-borda);
+  padding-top: 8px;
+}
+
+.item-adicionais-titulo {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cor-texto-suave);
+}
+
+.item-adicional-opcao {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px; /* alvo de toque */
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.item-adicional-opcao input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--cor-primaria);
+}
+
+.item-adicional-preco {
+  margin-left: auto;
+  color: var(--cor-texto-suave);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Skeleton / estados ── */
 
 .skeleton-caixa {
@@ -645,6 +766,15 @@ h1 {
   padding-inline: 28px;
 }
 
+/* Estado de erro: caixa dedicada (diferente dos estados neutros .estado) */
+.estado-erro {
+  margin: 12px;
+  border: 1px solid var(--cor-erro);
+  border-radius: var(--raio);
+  background: #f9e4e7; /* derivada de --cor-erro */
+  color: var(--cor-erro);
+}
+
 .estado-centro {
   display: grid;
   justify-items: center;
@@ -664,10 +794,22 @@ h1 {
 }
 
 .resumo-carrinho li {
+  display: grid;
+  gap: 2px;
+  padding: 4px 0;
+}
+
+.resumo-linha {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 4px 0;
+}
+
+/* Adicional escolhido (sub-linha) */
+.resumo-adicional {
+  padding-left: 16px;
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
 }
 
 .slots {
@@ -708,7 +850,8 @@ h1 {
   margin-bottom: 6px;
 }
 
-.campo input {
+.campo input,
+.campo textarea {
   width: 100%;
   font-family: inherit;
   font-size: 16px; /* impede zoom automático do iOS ao focar */
@@ -719,10 +862,16 @@ h1 {
   color: var(--cor-texto);
 }
 
-.campo input:focus {
+.campo input:focus,
+.campo textarea:focus {
   border-color: var(--cor-primaria);
   outline: none;
   box-shadow: 0 0 0 3px var(--cor-borda);
+}
+
+.campo textarea {
+  resize: vertical;
+  min-height: 64px;
 }
 
 /* ── Aguardando ── */
@@ -983,25 +1132,29 @@ h1 {
 
 /* ── Barra inferior ── */
 
-/* Fixa na base da viewport em qualquer view (cardápio e agendamento)
-   e com largura total. O main já reserva 96px embaixo para não esconder
-   conteúdo (padding-bottom). */
+/* Fixa na base da viewport em qualquer view (cardápio e agendamento).
+   A superfície (fundo/borda/sombra) ocupa a largura total da viewport;
+   o conteúdo fica na coluna de 480px, alinhado ao main. O main já
+   reserva 96px embaixo para não esconder conteúdo (padding-bottom). */
 .barra-inferior {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 20;
+  background: var(--cor-superficie);
+  border-top: 1px solid var(--cor-borda);
+  box-shadow: var(--sombra);
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.barra-inferior-conteudo {
   display: flex;
   align-items: center;
   gap: 12px;
   max-width: 480px;
   margin: 0 auto;
   padding: 12px var(--esp);
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
-  background: var(--cor-superficie);
-  border-top: 1px solid var(--cor-borda);
-  box-shadow: var(--sombra);
 }
 
 .barra-total {

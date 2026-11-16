@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#bf2431">
-  <meta name="description" content="Faça seu pedido, agende o horário de hoje e pague com Pix.">
-  <title>Lanchonete — Pedidos</title>
+  <meta name="description" content="Faça seu pedido, agende o horário e pague com Pix.">
+  <title>LutzGrill — Pedidos</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
@@ -33,7 +33,7 @@
 
   <header class="topo">
     <img class="logo" src="assets/logo.svg" alt="">
-    <span id="app-nome-loja" class="nome-loja">Lanchonete</span>
+    <span id="app-nome-loja" class="nome-loja">LutzGrill</span>
     <span id="chip-status-loja" class="chip-loja" hidden></span>
     <button id="btn-meu-pedido" class="link-pedido" type="button" hidden>Meu pedido</button>
   </header>
@@ -42,12 +42,12 @@
     <section data-view="cardapio" class="view" aria-labelledby="titulo-cardapio">
       <div class="view-cabecalho">
         <h1 id="titulo-cardapio" tabindex="-1">Cardápio</h1>
-        <button id="btn-atualizar-cardapio" class="btn-suave btn-mini" type="button">Atualizar</button>
+        <button id="btn-atualizar-cardapio" type="button" title="Atualizar cardápio" aria-label="Atualizar cardápio"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
       </div>
       <div id="cardapio-skeleton" class="skeleton-caixa" hidden>
         <p class="skeleton-msg">Carregando cardápio…</p>
       </div>
-      <div id="cardapio-erro" class="estado" hidden>
+      <div id="cardapio-erro" class="estado estado-erro" hidden>
         <p>Não foi possível carregar o cardápio.</p>
         <button id="btn-tentar-cardapio" class="btn-primario" type="button">Tentar novamente</button>
       </div>
@@ -72,6 +72,10 @@
         <label for="input-nome">Nome para o pedido (opcional)</label>
         <input id="input-nome" type="text" maxlength="40" autocomplete="off" placeholder="Como devemos te chamar?">
       </div>
+      <div class="campo">
+        <label for="input-observacao">Observação (opcional)</label>
+        <textarea id="input-observacao" rows="2" maxlength="200" placeholder="Ex.: sem cebola, bem passado…"></textarea>
+      </div>
     </section>
 
     <!-- ── AGUARDANDO CONFIRMAÇÃO ── -->
@@ -92,7 +96,7 @@
           <p id="aguardando-cronometro" class="cronometro">00:00</p>
           <p id="aguardando-status" class="status-vivo">Aguardando confirmação da loja.</p>
           <p id="aguardando-dica" class="texto-suave" hidden>
-            Ainda estamos confirmando. Você pode ficar nesta página ou sair — a sessão fica salva por 5 min de inatividade.
+            Ainda estamos confirmando. Você pode ficar nesta página ou sair — a sessão fica salva por 20 min de inatividade.
           </p>
         </div>
       </div>
@@ -138,6 +142,7 @@
         <p class="texto-centro texto-suave">Sua senha de retirada</p>
         <p id="confirmacao-senha" class="senha-caixa" aria-hidden="true"></p>
         <p id="confirmacao-senha-sr" class="sr-only"></p>
+        <p id="confirmacao-processando" class="status-vivo" hidden>Finalizando seu pedido…</p>
         <div class="acoes-linha">
           <button id="btn-copiar-numero" class="btn-primario" type="button">Copiar número</button>
           <button id="btn-copiar-senha" class="btn-primario" type="button">Copiar senha</button>
@@ -177,11 +182,13 @@
   </main>
 
   <div id="barra-inferior" class="barra-inferior" hidden>
-    <div class="barra-total">
-      <span class="texto-suave">Total</span>
-      <strong id="barra-total">R$ 0,00</strong>
+    <div class="barra-inferior-conteudo">
+      <div class="barra-total">
+        <span class="texto-suave">Total</span>
+        <strong id="barra-total">R$ 0,00</strong>
+      </div>
+      <button id="barra-cta" class="btn-primario cta" type="button" disabled>Continuar</button>
     </div>
-    <button id="barra-cta" class="btn-primario cta" type="button" disabled>Continuar</button>
   </div>
 
   <div id="toasts" class="toasts" role="status" aria-live="polite"></div>

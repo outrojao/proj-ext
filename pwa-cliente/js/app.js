@@ -63,7 +63,11 @@ function toast(mensagem, tipo = "info") {
 }
 
 function totalCarrinho() {
-  return store.carrinho.reduce((soma, e) => soma + e.item.preco * e.qtd, 0);
+  return store.carrinho.reduce(
+    (soma, e) =>
+      soma + e.item.preco * e.qtd + (e.adicionais || []).reduce((s, a) => s + a.item.preco * a.qtd, 0),
+    0
+  );
 }
 
 function atualizarBarra() {
@@ -288,7 +292,7 @@ async function boot() {
     });
   }
 
-  // Restauração de sessão (cookie → sessionStorage, TTL 5 min deslizante)
+  // Restauração de sessão (cookie → sessionStorage, TTL 20 min deslizante)
   const sessao = carregarSessao(Date.now(), CONFIG.TTL_MS);
   let passoInicial = "CARDAPIO";
   if (sessao) {

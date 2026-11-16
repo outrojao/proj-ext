@@ -34,6 +34,13 @@ export function entrar(c) {
   if (!vinculado) {
     vinculado = true;
     document.getElementById("btn-entregue-novo").addEventListener("click", () => ctx.novoPedido());
+    // Lê do store (não do fechamento): a identificação pode mudar depois
+    // do entrar, quando o número/senha chegam.
+    document.getElementById("btn-copiar-identificacao").addEventListener("click", () => {
+      const p = ctx.store.pedido;
+      const texto = `Pedido ${p.numero ?? "…"} — senha ${p.senha_retirada ?? "…"}`;
+      ctx.copiar(texto, "Informações copiadas!");
+    });
   }
 
   atualizarIdentificacao(pedido);
@@ -71,8 +78,17 @@ export function entrar(c) {
         ctx.irPara("AGUARDANDO_CONFIRMACAO");
         return;
       }
+      const anterior = ctx.store.pedido;
       ctx.store.pedido = atual;
       ctx.persistir();
+      // O número/senha podem chegar depois do entrar (retry da tela de
+      // confirmação): re-renderiza a identificação quando mudarem.
+      if (
+        (anterior.numero ?? null) !== (atual.numero ?? null) ||
+        (anterior.senha_retirada ?? null) !== (atual.senha_retirada ?? null)
+      ) {
+        atualizarIdentificacao(atual);
+      }
     } catch (e) {
       if (e instanceof ErroApi && e.status === 401) {
         ctx.erroAutenticacao();
@@ -94,10 +110,6 @@ function atualizarIdentificacao(pedido) {
   document.getElementById("acom-numero").textContent =
     pedido.numero != null ? String(pedido.numero) : "—";
   document.getElementById("acom-senha").textContent = pedido.senha_retirada || "—";
-  document.getElementById("btn-copiar-identificacao").addEventListener("click", () => {
-    const texto = `Pedido ${pedido.numero ?? "…"} — senha ${pedido.senha_retirada ?? "…"}`;
-    ctx.copiar(texto, "Informações copiadas!");
-  });
 }
 
 function atualizarTimeline(status) {

@@ -1,7 +1,7 @@
 {
-  "name": "Lanchonete — Pedidos",
-  "short_name": "Lanchonete",
-  "description": "Faça seu pedido, agende o horário de hoje e pague com Pix.",
+  "name": "LutzGrill — Pedidos",
+  "short_name": "LutzGrill",
+  "description": "Faça seu pedido, agende o horário e pague com Pix.",
   "lang": "pt-BR",
   "start_url": ".",
   "scope": ".",

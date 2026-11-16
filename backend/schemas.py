@@ -10,12 +10,17 @@ from datetime import datetime
 # ── Item ──
 
 class ItemBase(BaseModel):
-    nome: str
-    descricao: Optional[str] = None
-    preco: float
+    # Limites espelham o maxlength dos forms (admin PWA) e o banco
+    # (preco Numeric(10,2)): entrada fora do limite vira 422, não 500.
+    nome: str = Field(..., min_length=1, max_length=60)
+    descricao: Optional[str] = Field(None, max_length=200)
+    preco: float = Field(..., ge=0, le=99_999_999.99)
     disponivel: bool = True
-    imagem: Optional[str] = None
-    categoria: Optional[str] = None
+    imagem: Optional[str] = Field(None, max_length=2048)
+    categoria: Optional[str] = Field(None, max_length=40)
+    # Ids dos itens-base onde este item vale (M:N). Não-nula (mesmo vazia) =
+    # este item é um adicional; None = item comum.
+    aplica_em: Optional[List[int]] = None
 
 
 class ItemCreate(ItemBase):
@@ -30,15 +35,24 @@ class ItemResponse(ItemBase):
 
 # ── PedidoItem ──
 
+class PedidoAdicionalCreate(BaseModel):
+    item_id: int
+    quantidade: int = Field(1, ge=1, le=999)
+
+
 class PedidoItemCreate(BaseModel):
     item_id: int
-    quantidade: int = 1
+    quantidade: int = Field(1, ge=1, le=999)
+    # Adicionais escolhidos para esta linha (vazio quando o cliente não escolheu)
+    adicionais: List[PedidoAdicionalCreate] = []
 
 
 class PedidoItemResponse(BaseModel):
     id: int
     item_id: int
     quantidade: int
+    # None em linhas antigas (pré-feature); clients tratam como vazia
+    adicionais: Optional[List[PedidoAdicionalCreate]] = None
     item: Optional[ItemResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -47,7 +61,7 @@ class PedidoItemResponse(BaseModel):
 # ── Pedido ──
 
 class PedidoCreate(BaseModel):
-    itens: List[PedidoItemCreate]
+    itens: List[PedidoItemCreate] = Field(..., min_length=1)
     nome_cliente: Optional[str] = Field(
         None,
         max_length=40,
@@ -58,6 +72,11 @@ class PedidoCreate(BaseModel):
         pattern=r"^([01]\d|2[0-3]):[0-5]\d$",
         description="Horário no formato HH:MM (ex.: 14:30)",
     )
+    observacao: Optional[str] = Field(
+        None,
+        max_length=200,
+        description="Observação livre do cliente (ex.: 'sem cebola')",
+    )
 
 
 class PedidoResponse(BaseModel):
@@ -65,6 +84,7 @@ class PedidoResponse(BaseModel):
     numero: Optional[int] = None
     senha_retirada: Optional[str] = None
     nome_cliente: Optional[str] = None
+    observacao: Optional[str] = None
     horario_agendamento: Optional[str] = None
     status: str
     origem: str

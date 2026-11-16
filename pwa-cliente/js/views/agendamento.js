@@ -54,11 +54,22 @@ function renderizarResumo() {
   lista.innerHTML = "";
   for (const entrada of ctx.store.carrinho) {
     const li = document.createElement("li");
+    const linha = document.createElement("span");
+    linha.className = "resumo-linha";
     const nome = document.createElement("span");
     nome.textContent = `${entrada.item.nome} × ${entrada.qtd}`;
+    let subtotal = entrada.item.preco * entrada.qtd;
+    for (const ad of entrada.adicionais || []) {
+      const sub = document.createElement("span");
+      sub.className = "resumo-adicional";
+      sub.textContent = `+ ${ad.item.nome} × ${ad.qtd}`;
+      li.appendChild(sub);
+      subtotal += ad.item.preco * ad.qtd;
+    }
     const preco = document.createElement("span");
-    preco.textContent = formatarBRL(entrada.item.preco * entrada.qtd);
-    li.append(nome, preco);
+    preco.textContent = formatarBRL(subtotal);
+    linha.append(nome, preco);
+    li.prepend(linha);
     lista.appendChild(li);
   }
 }
@@ -92,9 +103,14 @@ export function fazerPedido() {
     return;
   }
   const corpo = {
-    itens: ctx.store.carrinho.map((e) => ({ item_id: e.item.id, quantidade: e.qtd })),
+    itens: ctx.store.carrinho.map((e) => ({
+      item_id: e.item.id,
+      quantidade: e.qtd,
+      adicionais: (e.adicionais || []).map((a) => ({ item_id: a.item.id, quantidade: a.qtd }))
+    })),
     horario_agendamento: slotSelecionado,
-    nome_cliente: document.getElementById("input-nome").value.trim() || undefined
+    nome_cliente: document.getElementById("input-nome").value.trim() || undefined,
+    observacao: document.getElementById("input-observacao").value.trim() || undefined
   };
   const botao = document.getElementById("barra-cta");
   botao.disabled = true;

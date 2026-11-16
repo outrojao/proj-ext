@@ -2,7 +2,8 @@
 Router de teste com dados mockados.
 
 Endpoints para que os colegas possam testar o PWA, App Mobile e ESP32
-sem precisar configurar nada manualmente. Estes endpoints não exigem API key.
+sem precisar configurar nada manualmente. Só existem no dev
+(EXPOSE_TEST_ROUTES=1) e exigem uma API key válida.
 
 Uso:
 1. POST /test/seed          → popula o banco com cardápio + pedidos de exemplo

@@ -52,7 +52,7 @@ def _criar_itens(client, api_headers):
         resp = client.post(
             "/itens",
             json={"nome": nome, "descricao": nome, "preco": preco, "disponivel": True},
-            headers=api_headers["pwa_cliente"],
+            headers=api_headers["app"],  # mutação de item: só admin
         )
         assert resp.status_code == 201
         itens.append(resp.json())

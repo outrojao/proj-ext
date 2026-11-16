@@ -5,7 +5,7 @@ export const CONFIG = {
   // API_BASE: "https://proj-ext-api.onrender.com",
   // API_KEY: "sua-chave-pwa-cliente-aqui",
   API_BASE: "http://localhost:8000",
-  API_KEY: "sua-chave-pwa-aqui",
+  API_KEY: "ETN1dw1lw5FU4oIL3Bwd7ntuW4wI7nIc",
   NOME_LOJA: "LutzGrill",
 
   // Modo demo: simula itens, pedido, confirmação da loja e aprovação do Pix
@@ -14,8 +14,8 @@ export const CONFIG = {
   MODO_DEMO_APROVA_MS: 8000, // tempo até o Pix "cair" no demo
   DEMO_CONFIRMAR_MS: 6000, // tempo até a "loja" confirmar o pedido no demo
 
-  // Sessão salva (cookie + sessionStorage): expira após 5 min de inatividade
-  TTL_MS: 300000,
+  // Sessão salva (cookie + sessionStorage): expira após 20 min de inatividade
+  TTL_MS: 1200000,
 
   // Pollings
   POLL_STATUS_MS: 4000,

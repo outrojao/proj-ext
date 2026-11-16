@@ -1,4 +1,4 @@
-const CACHE = "pwa-cliente-v7";
+const CACHE = "pwa-cliente-v13";
 // Espelha CONFIG.API_BASE em js/config.js (service worker clássico não importa módulos aqui).
 const API_BASE = "https://proj-ext-api.onrender.com";
 

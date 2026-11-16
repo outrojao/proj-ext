@@ -31,10 +31,17 @@ export function statusLoja(agora, horario) {
 
 // Válido enquanto `agora - ts` não ultrapassa o TTL (deslizante: cada
 // gravação reescreve ts).
-export function validarSessao(payload, agora, ttlMs = 300000) {
+export function validarSessao(payload, agora, ttlMs = 1200000) {
   if (!payload || typeof payload !== "object") return false;
   if (typeof payload.ts !== "number") return false;
   return agora - payload.ts <= ttlMs;
+}
+
+// Identificação do cliente completa. O backend gera número + senha no MESMO
+// commit que marca PAGO (pedidos_service.marcar_pago), então ausentes = o
+// pedido ainda não é PAGO ou a busca pegou um momento antes do commit.
+export function temIdentificacao(pedido) {
+  return Boolean(pedido && pedido.numero != null && pedido.senha_retirada);
 }
 
 export function montarSessao({ step, carrinho, pedido }) {
@@ -46,7 +53,7 @@ export function montarSessao({ step, carrinho, pedido }) {
   };
 }
 
-export function maxAgeCookie(ttlMs = 300000) {
+export function maxAgeCookie(ttlMs = 1200000) {
   return Math.max(1, Math.floor(ttlMs / 1000));
 }
 

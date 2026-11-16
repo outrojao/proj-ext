@@ -11,7 +11,7 @@ def _criar_item(client, api_headers):
     resp = client.post(
         "/itens",
         json={"nome": "X-Burger", "descricao": "Hambúrguer", "preco": PRECO_ITEM, "disponivel": True},
-        headers=api_headers["pwa_cliente"],
+        headers=api_headers["app"],  # mutação de item: só admin
     )
     assert resp.status_code == 201
     return resp.json()

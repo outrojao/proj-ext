@@ -17,7 +17,7 @@ export class ErroApi extends Error {
 function cabecalhos() {
   return {
     "X-API-Key": CONFIG.API_KEY,
-    "Content-Type": "application/json",
+    "Content-Type": "application/json"
   };
 }
 
@@ -27,7 +27,7 @@ async function requisitar(caminho, opcoes = {}) {
   }
   const resposta = await fetch(`${CONFIG.API_BASE}${caminho}`, {
     headers: cabecalhos(),
-    ...opcoes,
+    ...opcoes
   });
   if (!resposta.ok) {
     let detalhe = `Erro ${resposta.status}`;
@@ -45,68 +45,25 @@ async function requisitar(caminho, opcoes = {}) {
 
 export const apiGet = (caminho) => requisitar(caminho, { method: "GET" });
 export const apiPost = (caminho, corpo) =>
-  requisitar(caminho, {
-    method: "POST",
-    corpo,
-    body: JSON.stringify(corpo ?? {}),
-  });
+  requisitar(caminho, { method: "POST", corpo, body: JSON.stringify(corpo ?? {}) });
 export const apiPatch = (caminho, corpo) =>
-  requisitar(caminho, {
-    method: "PATCH",
-    corpo,
-    body: JSON.stringify(corpo ?? {}),
-  });
+  requisitar(caminho, { method: "PATCH", corpo, body: JSON.stringify(corpo ?? {}) });
 
 // ────────────────────────────────────────────────────────────────
 // MODO DEMO — simula o backend (itens, pedido, Pix manual, PAGO)
 // ────────────────────────────────────────────────────────────────
 
 const DEMO_ITENS = [
-  {
-    id: 1,
-    nome: "X-Burger",
-    descricao: "Pão brioche, hambúrguer 150g, queijo e molho da casa.",
-    preco: 15.0,
-    disponivel: true,
-    imagem: null,
-    categoria: "Lanches",
-  },
-  {
-    id: 2,
-    nome: "X-Salada",
-    descricao: "Pão brioche, hambúrguer 150g, queijo, alface e tomate.",
-    preco: 16.0,
-    disponivel: true,
-    imagem: null,
-    categoria: "Lanches",
-  },
-  {
-    id: 3,
-    nome: "Refrigerante",
-    descricao: "Lata 350ml.",
-    preco: 6.0,
-    disponivel: true,
-    imagem: null,
-    categoria: "Bebidas",
-  },
-  {
-    id: 4,
-    nome: "Batata Frita",
-    descricao: "Porção média.",
-    preco: 10.0,
-    disponivel: true,
-    imagem: null,
-    categoria: "Acompanhamentos",
-  },
-  {
-    id: 5,
-    nome: "Milkshake",
-    descricao: "Chocolate, morango ou baunilha (500ml).",
-    preco: 12.0,
-    disponivel: true,
-    imagem: null,
-    categoria: "Sobremesas",
-  },
+  { id: 1, nome: "X-Burger", descricao: "Pão brioche, hambúrguer 150g, queijo e molho da casa.", preco: 15.0, disponivel: true, imagem: null, categoria: "Lanches" },
+  { id: 2, nome: "X-Salada", descricao: "Pão brioche, hambúrguer 150g, queijo, alface e tomate.", preco: 16.0, disponivel: true, imagem: null, categoria: "Lanches" },
+  { id: 3, nome: "Refrigerante", descricao: "Lata 350ml.", preco: 6.0, disponivel: true, imagem: null, categoria: "Bebidas" },
+  { id: 4, nome: "Batata Frita", descricao: "Porção média.", preco: 10.0, disponivel: true, imagem: null, categoria: "Acompanhamentos" },
+  { id: 5, nome: "Milkshake", descricao: "Chocolate, morango ou baunilha (500ml).", preco: 12.0, disponivel: true, imagem: null, categoria: "Sobremesas" },
+  // Adicionais (aplica_em não-vazia): não entram no cardápio, só como
+  // opção dos itens-base a que aplicam — mesma regra do backend.
+  // Não têm categoria (idem backend).
+  { id: 6, nome: "Queijo extra", descricao: "Porção extra de queijo (serve no X-Burger).", preco: 2.0, disponivel: true, imagem: null, categoria: null, aplica_em: [1] },
+  { id: 7, nome: "Carne extra 50g", descricao: "Hambúrguer extra de 50g (serve no X-Burger).", preco: 5.0, disponivel: true, imagem: null, categoria: null, aplica_em: [1] }
 ];
 
 const DEMO_STORAGE_KEY = "pwa_demo_estado";
@@ -124,8 +81,8 @@ function demoPersistir() {
       JSON.stringify({
         proximoId: demo.proximoId,
         proximoNumero: demo.proximoNumero,
-        pedidos: Object.fromEntries(demo.pedidos),
-      }),
+        pedidos: Object.fromEntries(demo.pedidos)
+      })
     );
   } catch {
     // storage indisponível: segue só em memória
@@ -142,9 +99,7 @@ function demoRestaurar() {
       proximoId: Number(serial.proximoId) || 1,
       proximoNumero: Number(serial.proximoNumero) || 101,
       // chaves viram string no JSON: devolve para número
-      pedidos: new Map(
-        Object.entries(serial.pedidos || {}).map(([id, p]) => [Number(id), p]),
-      ),
+      pedidos: new Map(Object.entries(serial.pedidos || {}).map(([id, p]) => [Number(id), p]))
     };
   } catch {
     return null;
@@ -169,11 +124,7 @@ export function _demoRecarregar() {
 
 function demoEstado() {
   if (!demo) {
-    demo = demoRestaurar() || {
-      proximoId: 1,
-      proximoNumero: 101,
-      pedidos: new Map(),
-    };
+    demo = demoRestaurar() || { proximoId: 1, proximoNumero: 101, pedidos: new Map() };
   }
   return demo;
 }
@@ -189,8 +140,7 @@ function demoAtender(caminho, metodo, corpo) {
   const partes = caminho.split("/").filter(Boolean);
 
   // GET /health
-  if (metodo === "GET" && caminho === "/health")
-    return Promise.resolve({ status: "ok" });
+  if (metodo === "GET" && caminho === "/health") return Promise.resolve({ status: "ok" });
 
   // GET /itens
   if (metodo === "GET" && caminho === "/itens") {
@@ -204,6 +154,11 @@ function demoAtender(caminho, metodo, corpo) {
       const item = DEMO_ITENS.find((i) => i.id === pi.item_id);
       if (!item) throw new ErroApi(`Item ${pi.item_id} não encontrado`, 400);
       total += item.preco * pi.quantidade;
+      for (const ad of pi.adicionais || []) {
+        const adItem = DEMO_ITENS.find((a) => a.id === ad.item_id);
+        if (!adItem) throw new ErroApi(`Adicional ${ad.item_id} não encontrado`, 400);
+        total += adItem.preco * (ad.quantidade || 1);
+      }
     }
     const id = estado.proximoId++;
     const pedido = {
@@ -211,13 +166,14 @@ function demoAtender(caminho, metodo, corpo) {
       numero: null,
       senha_retirada: null,
       nome_cliente: corpo.nome_cliente || null,
+      observacao: corpo.observacao || null,
       horario_agendamento: corpo.horario_agendamento || null,
       status: "PENDENTE",
       origem: "PWA_CLIENTE",
       total,
       itens: corpo.itens,
       criadoEm: Date.now(),
-      pagamentoCriadoEm: null,
+      pagamentoCriadoEm: null
     };
     estado.pedidos.set(id, pedido);
     demoPersistir();
@@ -228,10 +184,7 @@ function demoAtender(caminho, metodo, corpo) {
   if (metodo === "GET" && partes[0] === "pedidos" && partes.length === 2) {
     const pedido = demoPedido(partes[1]);
     // A "loja" do demo confirma o pedido sozinha após DEMO_CONFIRMAR_MS.
-    if (
-      pedido.status === "PENDENTE" &&
-      Date.now() - pedido.criadoEm >= CONFIG.DEMO_CONFIRMAR_MS
-    ) {
+    if (pedido.status === "PENDENTE" && Date.now() - pedido.criadoEm >= CONFIG.DEMO_CONFIRMAR_MS) {
       pedido.status = "CONFIRMADO";
       demoPersistir();
     }
@@ -239,19 +192,11 @@ function demoAtender(caminho, metodo, corpo) {
   }
 
   // POST /pedidos/{id}/pagamento
-  if (
-    metodo === "POST" &&
-    partes[0] === "pedidos" &&
-    partes[2] === "pagamento"
-  ) {
+  if (metodo === "POST" && partes[0] === "pedidos" && partes[2] === "pagamento") {
     const pedido = demoPedido(partes[1]);
-    if (pedido.status === "PAGO")
-      throw new ErroApi("Pagamento já foi feito", 409);
+    if (pedido.status === "PAGO") throw new ErroApi("Pagamento já foi feito", 409);
     if (pedido.status !== "CONFIRMADO") {
-      throw new ErroApi(
-        `Pagamento só pode ser gerado para pedidos CONFIRMADO (status atual: ${pedido.status})`,
-        409,
-      );
+      throw new ErroApi(`Pagamento só pode ser gerado para pedidos CONFIRMADO (status atual: ${pedido.status})`, 409);
     }
     const codigo = `000201PIX-DEMO-PED${pedido.id}-${Number(pedido.total).toFixed(2)}`;
     pedido.pagamentoCriadoEm = Date.now();
@@ -260,23 +205,15 @@ function demoAtender(caminho, metodo, corpo) {
       qr_code: codigo,
       qr_code_base64: qrDemoDataUri(pedido.total),
       copia_cola: codigo,
-      expira_em: new Date(Date.now() + CONFIG.PIX_TIMEOUT_MS).toISOString(),
+      expira_em: new Date(Date.now() + CONFIG.PIX_TIMEOUT_MS).toISOString()
     });
   }
 
   // GET /pedidos/{id}/pagamento
-  if (
-    metodo === "GET" &&
-    partes[0] === "pedidos" &&
-    partes[2] === "pagamento"
-  ) {
+  if (metodo === "GET" && partes[0] === "pedidos" && partes[2] === "pagamento") {
     const pedido = demoPedido(partes[1]);
-    if (pedido.status === "PAGO")
-      return Promise.resolve({ status: "APROVADO" });
-    if (
-      pedido.pagamentoCriadoEm &&
-      Date.now() - pedido.pagamentoCriadoEm >= CONFIG.MODO_DEMO_APROVA_MS
-    ) {
+    if (pedido.status === "PAGO") return Promise.resolve({ status: "APROVADO" });
+    if (pedido.pagamentoCriadoEm && Date.now() - pedido.pagamentoCriadoEm >= CONFIG.MODO_DEMO_APROVA_MS) {
       // O Pix "caiu": vira PAGO com número sequencial + senha de retirada.
       pedido.status = "PAGO";
       pedido.numero = estado.proximoNumero++;
@@ -288,21 +225,11 @@ function demoAtender(caminho, metodo, corpo) {
   }
 
   // POST /pedidos/{id}/declarar-pagamento
-  if (
-    metodo === "POST" &&
-    partes[0] === "pedidos" &&
-    partes[2] === "declarar-pagamento"
-  ) {
+  if (metodo === "POST" && partes[0] === "pedidos" && partes[2] === "declarar-pagamento") {
     const pedido = demoPedido(partes[1]);
     const quando = new Date().toISOString();
-    return Promise.resolve({
-      status: "OK",
-      pedido_id: pedido.id,
-      pagamento_declarado_em: quando,
-    });
+    return Promise.resolve({ status: "OK", pedido_id: pedido.id, pagamento_declarado_em: quando });
   }
 
-  return Promise.reject(
-    new ErroApi(`Rota do demo não implementada: ${metodo} ${caminho}`, 500),
-  );
+  return Promise.reject(new ErroApi(`Rota do demo não implementada: ${metodo} ${caminho}`, 500));
 }

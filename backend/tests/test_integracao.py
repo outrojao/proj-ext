@@ -202,6 +202,34 @@ def test_pago_gera_numero_e_senha_identicos_nos_dois_lados(client, api_headers):
     assert no_cliente["pagamento_declarado_em"] is None
 
 
+def test_adicionais_por_linha_e_observacao_do_cliente_no_admin(client, api_headers):
+    """Pedido do cliente com adicional + observação chega inteiro ao admin."""
+    base = _criar_item(client, api_headers, nome="X-Burger", preco=15.0)
+    ad = _criar_item(client, api_headers, nome="Queijo extra", preco=2.0, aplica_em=[base["id"]])
+
+    resp = client.post(
+        "/pedidos",
+        json={
+            "itens": [{"item_id": base["id"], "quantidade": 1,
+                        "adicionais": [{"item_id": ad["id"], "quantidade": 2}]}],
+            "nome_cliente": "Joao",
+            "horario_agendamento": "12:30",
+            "observacao": "Trocando a mostarda por ketchup",
+        },
+        headers=api_headers["pwa_cliente"],
+    )
+    assert resp.status_code == 201
+    criado = resp.json()
+
+    no_admin = next(p for p in client.get("/pedidos", headers=api_headers["app"]).json()
+                    if p["id"] == criado["id"])
+    assert no_admin["total"] == 19.0  # 15 + 2x2 (adicionais entram no total)
+    assert no_admin["observacao"] == "Trocando a mostarda por ketchup"
+    assert no_admin["itens"][0]["adicionais"] == [{"item_id": ad["id"], "quantidade": 2}]
+    # O item da linha resolve (admin mostra nome do item-base e dos adicionais)
+    assert no_admin["itens"][0]["item"]["id"] == base["id"]
+
+
 def test_guard_pwa_nao_consegue_marcar_pago(client, api_headers):
     item = _criar_item(client, api_headers)
     pedido = _criar_pedido(client, api_headers, itens=[{"item_id": item["id"], "quantidade": 1}])
@@ -212,7 +240,7 @@ def test_guard_pwa_nao_consegue_marcar_pago(client, api_headers):
         json={"novo_status": "PAGO"},
         headers=api_headers["pwa_cliente"],
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 401
 
     # E o pedido segue CONFIRMADO nos dois lados
     assert client.get(f"/pedidos/{pedido['id']}", headers=api_headers["pwa_cliente"]).json()["status"] == "CONFIRMADO"

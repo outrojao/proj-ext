@@ -14,7 +14,7 @@ def _criar_itens(client, api_headers):
         resp = client.post(
             "/itens",
             json={"nome": nome, "descricao": f"Descrição {nome}", "preco": preco, "disponivel": True},
-            headers=api_headers["pwa_cliente"],
+            headers=api_headers["app"],  # mutação de item: só admin
         )
         itens.append(resp.json())
     return itens
@@ -74,7 +74,7 @@ def test_ws_status_atualizado_notifica_pwa_e_app(client, api_headers):
     """Mudança de status notifica PWA e App Mobile (status_atualizado)."""
     itens = _criar_itens(client, api_headers)
 
-    with client.websocket_connect("/ws/pwa?api_key=test-key-pwa") as ws_pwa, \
+    with client.websocket_connect("/ws/pwa_cliente?api_key=test-key-pwa") as ws_pwa, \
          client.websocket_connect("/ws/pwa_admin?api_key=test-key-app") as ws_app:
 
         # Criar pedido

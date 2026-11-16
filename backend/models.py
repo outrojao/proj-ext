@@ -3,6 +3,7 @@ Modelos SQLAlchemy: Item, Pedido, PedidoItem.
 """
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -18,6 +19,10 @@ class Item(Base):
     disponivel = Column(Boolean, default=True)
     imagem = Column(String, nullable=True)
     categoria = Column(String, nullable=True)
+    # Aplicabilidade M:N: lista de ids dos itens-base onde este item vale.
+    # Não-nula (mesmo vazia) = este item É um adicional; None = item-base.
+    # Excluir um item-base remove o id daqui (desvincula, não apaga o adicional).
+    aplica_em = Column(JSONB, nullable=True)
 
     pedido_itens = relationship("PedidoItem", back_populates="item")
 
@@ -29,6 +34,7 @@ class Pedido(Base):
     numero = Column(Integer, nullable=True, index=True)  # Gerado quando status vira PAGO
     senha_retirada = Column(String(4), unique=True, nullable=True)  # Gerada quando status vira PAGO
     nome_cliente = Column(String(40), nullable=True)  # Nome opcional informado na PWA cliente
+    observacao = Column(String(200), nullable=True)  # Observação livre do cliente ("sem cebola")
     horario_agendamento = Column(String, nullable=True)
     status = Column(String, default="PENDENTE", nullable=False)
     origem = Column(String, default="PWA_CLIENTE", nullable=False)  # Sempre "PWA_CLIENTE" neste fluxo
@@ -50,6 +56,8 @@ class PedidoItem(Base):
     pedido_id = Column(Integer, ForeignKey("pedidos.id"), nullable=False)
     item_id = Column(Integer, ForeignKey("itens.id"), nullable=False)
     quantidade = Column(Integer, default=1, nullable=False)
+    # Adicionais escolhidos para ESTA linha: [{"item_id": int, "quantidade": int}]
+    adicionais = Column(JSONB, nullable=True)
 
     pedido = relationship("Pedido", back_populates="itens")
     item = relationship("Item", back_populates="pedido_itens")

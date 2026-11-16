@@ -12,7 +12,7 @@ def _criar_itens(client, api_headers):
         resp = client.post(
             "/itens",
             json={"nome": nome, "descricao": f"Descrição {nome}", "preco": preco, "disponivel": True},
-            headers=api_headers["pwa_cliente"],
+            headers=api_headers["app"],  # mutação de item: só admin
         )
         itens.append(resp.json())
     return itens
@@ -91,7 +91,7 @@ def test_criar_pedido_item_indisponivel(client, api_headers):
     client.put(
         f"/itens/{itens[0]['id']}",
         json={"nome": itens[0]["nome"], "descricao": itens[0]["descricao"], "preco": itens[0]["preco"], "disponivel": False},
-        headers=api_headers["pwa_cliente"],
+        headers=api_headers["app"],  # mutação de item: só admin
     )
     response = client.post(
         "/pedidos",
@@ -310,6 +310,144 @@ def test_fluxo_cancelado_depois_de_pago(client, api_headers):
     r = client.patch(f"/pedidos/{pedido_id}/status", json={"novo_status": "CANCELADO"}, headers=api_headers["app"])
     assert r.status_code == 200
     assert r.json()["status"] == "CANCELADO"
+
+
+# ── Adicionais (por linha) + observação ──
+
+def _criar_item(client, api_headers, nome, preco, **dados):
+    corpo = {"nome": nome, "descricao": None, "preco": preco, "disponivel": True}
+    corpo.update(dados)
+    resp = client.post("/itens", json=corpo, headers=api_headers["app"])
+    assert resp.status_code == 201
+    return resp.json()
+
+
+def test_criar_pedido_com_adicionais_por_linha(client, api_headers):
+    """Total soma os adicionais da linha; cada pedido guarda os seus próprios."""
+    base = _criar_item(client, api_headers, "X-Burger", 15.0)
+    ad = _criar_item(client, api_headers, "Queijo extra", 2.0, aplica_em=[base["id"]])
+
+    # Pedido 1: 2x X-Burger + 1 Queijo extra → 2x15 + 1x2 = 32
+    p1 = client.post(
+        "/pedidos",
+        json={"itens": [{"item_id": base["id"], "quantidade": 2,
+                         "adicionais": [{"item_id": ad["id"], "quantidade": 1}]}],
+              "horario_agendamento": "12:00"},
+        headers=api_headers["pwa_cliente"],
+    ).json()
+    assert p1["total"] == 32.0
+    assert p1["itens"][0]["adicionais"] == [{"item_id": ad["id"], "quantidade": 1}]
+
+    # Pedido 2: mesmo item, SEM adicional → 15 (adicionais são por linha)
+    p2 = client.post(
+        "/pedidos",
+        json={"itens": [{"item_id": base["id"], "quantidade": 1}], "horario_agendamento": "12:30"},
+        headers=api_headers["pwa_cliente"],
+    ).json()
+    assert p2["total"] == 15.0
+    assert not p2["itens"][0]["adicionais"]
+
+    # Persistiu na visão do admin, cada linha com os seus adicionais
+    d1 = client.get(f"/pedidos/{p1['id']}", headers=api_headers["app"]).json()
+    assert d1["total"] == 32.0
+    assert d1["itens"][0]["adicionais"] == [{"item_id": ad["id"], "quantidade": 1}]
+    d2 = client.get(f"/pedidos/{p2['id']}", headers=api_headers["app"]).json()
+    assert d2["total"] == 15.0
+
+
+def test_criar_pedido_adicional_de_item_errado(client, api_headers):
+    """Adicional vinculado a outro item na mesma linha → 400."""
+    a = _criar_item(client, api_headers, "X-Burger", 15.0)
+    b = _criar_item(client, api_headers, "Batata", 10.0)
+    ad = _criar_item(client, api_headers, "Queijo extra", 2.0, aplica_em=[a["id"]])
+
+    resp = client.post(
+        "/pedidos",
+        json={"itens": [{"item_id": b["id"], "quantidade": 1,
+                         "adicionais": [{"item_id": ad["id"], "quantidade": 1}]}],
+              "horario_agendamento": "12:00"},
+        headers=api_headers["pwa_cliente"],
+    )
+    assert resp.status_code == 400
+
+
+def test_criar_pedido_adicional_compartilhado_em_duas_linhas(client, api_headers):
+    """M:N: um adicional que aplica a dois itens-base vale nas duas linhas."""
+    a = _criar_item(client, api_headers, "X-Burger", 15.0)
+    b = _criar_item(client, api_headers, "X-Salada", 16.0)
+    ad = _criar_item(client, api_headers, "Queijo extra", 2.0, aplica_em=[a["id"], b["id"]])
+
+    resp = client.post(
+        "/pedidos",
+        json={"itens": [
+            {"item_id": a["id"], "quantidade": 1, "adicionais": [{"item_id": ad["id"], "quantidade": 1}]},
+            {"item_id": b["id"], "quantidade": 1, "adicionais": [{"item_id": ad["id"], "quantidade": 1}]},
+        ], "horario_agendamento": "12:00"},
+        headers=api_headers["pwa_cliente"],
+    )
+    assert resp.status_code == 201
+    criado = resp.json()
+    # 15 + 2 + 16 + 2 = 35
+    assert criado["total"] == 35.0
+
+
+def test_criar_pedido_adicional_indisponivel(client, api_headers):
+    """Adicional desativado (mesmo toggle dos itens) → 400."""
+    base = _criar_item(client, api_headers, "X-Burger", 15.0)
+    ad = _criar_item(client, api_headers, "Queijo extra", 2.0, aplica_em=[base["id"]])
+
+    # Desativa o adicional (PUT sempre envia aplica_em, senão desvincula)
+    resp = client.put(
+        f"/itens/{ad['id']}",
+        json={"nome": "Queijo extra", "descricao": None, "preco": 2.0,
+              "disponivel": False, "aplica_em": [base["id"]]},
+        headers=api_headers["app"],  # mutação de item: só admin
+    )
+    assert resp.status_code == 200
+
+    resp = client.post(
+        "/pedidos",
+        json={"itens": [{"item_id": base["id"], "quantidade": 1,
+                         "adicionais": [{"item_id": ad["id"], "quantidade": 1}]}],
+              "horario_agendamento": "12:00"},
+        headers=api_headers["pwa_cliente"],
+    )
+    assert resp.status_code == 400
+
+
+def test_criar_pedido_com_observacao(client, api_headers):
+    """Observação livre (até 200 chars) grava e devolve; sem ela → null."""
+    itens = _criar_itens(client, api_headers)
+
+    response = client.post(
+        "/pedidos",
+        json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}],
+              "horario_agendamento": "12:00", "observacao": "Sem cebola, por favor"},
+        headers=api_headers["pwa_cliente"],
+    )
+    assert response.status_code == 201
+    assert response.json()["observacao"] == "Sem cebola, por favor"
+    fetched = client.get(f"/pedidos/{response.json()['id']}", headers=api_headers["app"])
+    assert fetched.json()["observacao"] == "Sem cebola, por favor"
+
+    sem = client.post(
+        "/pedidos",
+        json={"itens": [{"item_id": itens[1]["id"], "quantidade": 1}], "horario_agendamento": "12:00"},
+        headers=api_headers["pwa_cliente"],
+    )
+    assert sem.status_code == 201
+    assert sem.json()["observacao"] is None
+
+
+def test_observacao_acima_de_200_caracteres_rejeitada(client, api_headers):
+    itens = _criar_itens(client, api_headers)
+    resp = client.post(
+        "/pedidos",
+        json={"itens": [{"item_id": itens[0]["id"], "quantidade": 1}],
+              "horario_agendamento": "12:00", "observacao": "x" * 201},
+        headers=api_headers["pwa_cliente"],
+    )
+    assert resp.status_code == 422
 
 
 def _levar_ate_pronto(client, api_headers, item_id):
