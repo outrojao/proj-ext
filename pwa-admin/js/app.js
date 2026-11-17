@@ -8,7 +8,7 @@ import {
   copiarTexto,
   criarPoll,
   somAtivo,
-  salvarSom
+  salvarSom,
 } from "./state.js";
 import { notificar } from "./audio.js";
 import { conectarWs } from "./ws.js";
@@ -22,13 +22,13 @@ import { abrirDetalhe, inicializarModais } from "./views/pedido-detalhe.js";
 const VIEWS = {
   ATENDIMENTO: vAtendimento,
   RETIRADA: vRetirada,
-  CARDAPIO: vCardapio
+  CARDAPIO: vCardapio,
 };
 
 const TABS = {
   ATENDIMENTO: "tab-atendimento",
   RETIRADA: "tab-retirada",
-  CARDAPIO: "tab-cardapio"
+  CARDAPIO: "tab-cardapio",
 };
 
 // ── Estado em memória (o backend é a fonte de verdade) ──
@@ -42,7 +42,7 @@ const store = {
   som: somAtivo(),
   offline: false,
   acoesBloqueadas: false,
-  carregou: false
+  carregou: false,
 };
 
 // ── Interface (toast, header) ──
@@ -80,11 +80,21 @@ function atualizarIndicadores() {
   badge.hidden = pendentes === 0;
   badge.textContent = String(pendentes);
 
-  document.getElementById("contagem-novos").textContent = String(porSecao.NOVOS);
-  document.getElementById("contagem-pagamento").textContent = String(porSecao.PAGAMENTO);
-  document.getElementById("contagem-preparo").textContent = String(porSecao.PREPARO);
-  document.getElementById("contagem-painel").textContent = String(porSecao.PAINEL);
-  document.getElementById("contagem-novos").classList.toggle("chamada", pendentes > 0);
+  document.getElementById("contagem-novos").textContent = String(
+    porSecao.NOVOS,
+  );
+  document.getElementById("contagem-pagamento").textContent = String(
+    porSecao.PAGAMENTO,
+  );
+  document.getElementById("contagem-preparo").textContent = String(
+    porSecao.PREPARO,
+  );
+  document.getElementById("contagem-painel").textContent = String(
+    porSecao.PAINEL,
+  );
+  document
+    .getElementById("contagem-novos")
+    .classList.toggle("chamada", pendentes > 0);
 
   // Chip de conexão
   const chip = document.getElementById("chip-conexao");
@@ -106,23 +116,35 @@ function atualizarIndicadores() {
 }
 
 // ── Navegação entre abas ──
-
+let pollAdmin = null;
 function irPara(aba) {
   if (!VIEWS[aba] || aba === store.aba) return;
   const anterior = store.aba;
   store.aba = aba;
+  if (aba === "CARDAPIO") {
+    if (pollAdmin) {
+      pollAdmin.parar();
+      pollAdmin = null;
+    }
+  } else if (!pollAdmin) {
+    pollAdmin = criarPoll(recarregarTudo, CONFIG.POLL_FALLBACK_MS);
+  }
 
   if (VIEWS[anterior] && VIEWS[anterior].sair) VIEWS[anterior].sair();
 
   document.querySelectorAll("main section[data-view]").forEach((secao) => {
     secao.hidden = secao.dataset.view !== aba.toLowerCase();
   });
-  document.querySelectorAll("nav.tabs .tab").forEach((botao) => botao.removeAttribute("aria-current"));
+  document
+    .querySelectorAll("nav.tabs .tab")
+    .forEach((botao) => botao.removeAttribute("aria-current"));
   document.getElementById(TABS[aba]).setAttribute("aria-current", "page");
 
   VIEWS[aba].entrar(ctx);
 
-  const titulo = document.querySelector(`main section[data-view="${aba.toLowerCase()}"] h1`);
+  const titulo = document.querySelector(
+    `main section[data-view="${aba.toLowerCase()}"] h1`,
+  );
   if (titulo) titulo.focus({ preventScroll: true });
 
   atualizarIndicadores();
@@ -133,8 +155,13 @@ function irPara(aba) {
 // entrar() é idempotente (vinculado): re-liga nada, só re-renderiza a lista.
 function renderizarAba() {
   if (!store.aba) return;
+
+  // Não reconstruir o cardápio por atualizações externas.
+  if (store.aba === "CARDAPIO") return;
+
   const modulo = VIEWS[store.aba];
   if (modulo && modulo.entrar) modulo.entrar(ctx);
+
   atualizarIndicadores();
 }
 
@@ -148,7 +175,9 @@ async function aplicarAcao(pedidoId, novoStatus) {
     return;
   }
   try {
-    const atualizado = await apiPatch(`/pedidos/${pedidoId}/status`, { novo_status: novoStatus });
+    const atualizado = await apiPatch(`/pedidos/${pedidoId}/status`, {
+      novo_status: novoStatus,
+    });
     const idx = store.pedidos.findIndex((p) => p.id === pedidoId);
     if (idx >= 0) store.pedidos[idx] = atualizado;
     // PRONTO/ENTREGUE mexem na fila do painel
@@ -160,7 +189,7 @@ async function aplicarAcao(pedidoId, novoStatus) {
       PAGO: "Pagamento confirmado.",
       PRONTO: "Pedido pronto.",
       ENTREGUE: "Pedido entregue.",
-      CANCELADO: "Pedido rejeitado."
+      CANCELADO: "Pedido rejeitado.",
     };
     toast(mensagens[novoStatus] || "Pedido atualizado.", "sucesso");
     notificar("ok");
@@ -195,7 +224,7 @@ async function recarregarTudo() {
     const [pedidos, itens, fila] = await Promise.all([
       apiGet("/pedidos"),
       apiGet("/itens"),
-      apiGet("/pedidos/fila-painel")
+      apiGet("/pedidos/fila-painel"),
     ]);
     store.pedidos = pedidos || [];
     store.itens = itens || [];
@@ -260,7 +289,8 @@ function erroAutenticacao() {
 function setOffline(offline) {
   // No modo demo o app não depende de rede: nunca mostra o banner.
   store.offline = offline;
-  document.getElementById("banner-offline").hidden = CONFIG.MODO_DEMO || !offline;
+  document.getElementById("banner-offline").hidden =
+    CONFIG.MODO_DEMO || !offline;
 }
 
 async function checarSaude() {
@@ -306,14 +336,18 @@ function configurarInstalacao() {
     eventoInstalacao = evento;
     if (!rejeitada) banner.hidden = false;
   });
-  document.getElementById("btn-instalar").addEventListener("click", async () => {
-    if (!eventoInstalacao) return;
-    eventoInstalacao.prompt();
-    await eventoInstalacao.userChoice;
-    eventoInstalacao = null;
-    banner.hidden = true;
-  });
-  document.getElementById("btn-fechar-instalacao").addEventListener("click", fechar);
+  document
+    .getElementById("btn-instalar")
+    .addEventListener("click", async () => {
+      if (!eventoInstalacao) return;
+      eventoInstalacao.prompt();
+      await eventoInstalacao.userChoice;
+      eventoInstalacao = null;
+      banner.hidden = true;
+    });
+  document
+    .getElementById("btn-fechar-instalacao")
+    .addEventListener("click", fechar);
 }
 
 // ── Boot ──
@@ -339,12 +373,18 @@ async function boot() {
     aplicarAcao,
     atualizarIndicadores,
     erroAutenticacao,
-    recarregarTudo
+    recarregarTudo,
   };
 
-  document.getElementById("tab-atendimento").addEventListener("click", () => irPara("ATENDIMENTO"));
-  document.getElementById("tab-retirada").addEventListener("click", () => irPara("RETIRADA"));
-  document.getElementById("tab-cardapio").addEventListener("click", () => irPara("CARDAPIO"));
+  document
+    .getElementById("tab-atendimento")
+    .addEventListener("click", () => irPara("ATENDIMENTO"));
+  document
+    .getElementById("tab-retirada")
+    .addEventListener("click", () => irPara("RETIRADA"));
+  document
+    .getElementById("tab-cardapio")
+    .addEventListener("click", () => irPara("CARDAPIO"));
 
   document.getElementById("btn-som").addEventListener("click", () => {
     store.som = !store.som;
@@ -353,7 +393,9 @@ async function boot() {
   });
   atualizarBotaoSom();
 
-  document.getElementById("btn-recarregar-401").addEventListener("click", () => window.location.reload());
+  document
+    .getElementById("btn-recarregar-401")
+    .addEventListener("click", () => window.location.reload());
 
   inicializarModais(ctx);
 
@@ -363,7 +405,10 @@ async function boot() {
     const alvo = e.target;
     if (
       alvo &&
-      (alvo.tagName === "INPUT" || alvo.tagName === "TEXTAREA" || alvo.tagName === "SELECT" || alvo.isContentEditable)
+      (alvo.tagName === "INPUT" ||
+        alvo.tagName === "TEXTAREA" ||
+        alvo.tagName === "SELECT" ||
+        alvo.isContentEditable)
     )
       return;
     if (e.key === "1") irPara("ATENDIMENTO");
@@ -389,7 +434,11 @@ async function boot() {
             const novo = registration.installing;
             if (!novo) return;
             novo.addEventListener("statechange", () => {
-              if (novo.state === "installed" && navigator.serviceWorker.controller) {
+              if (
+                novo.state === "installed" &&
+                navigator.serviceWorker.controller &&
+                store.aba !== "CARDAPIO"
+              ) {
                 window.location.reload();
               }
             });
@@ -410,11 +459,11 @@ async function boot() {
       store.ws = s;
       atualizarIndicadores();
     },
-    resync: recarregarTudo
+    resync: recarregarTudo,
   });
 
   // Fallback SEMPRE ativo: a fila do painel muda sem evento para o pwa_admin.
-  criarPoll(recarregarTudo, CONFIG.POLL_FALLBACK_MS);
+  pollAdmin = criarPoll(recarregarTudo, CONFIG.POLL_FALLBACK_MS);
 
   irPara("ATENDIMENTO");
 }

@@ -79,7 +79,9 @@ export function entrar(c) {
       .addEventListener("click", adicionarAdicional);
   }
 
-  renderizar();
+  if (document.getElementById("form-item").hidden) {
+    renderizar();
+  }
 }
 
 export function sair() {}
