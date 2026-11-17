@@ -1,15 +1,13 @@
-"""
-Geração de payload Pix "copia e cola" (estilo EMV) e QR Code.
-
-Referência: especificação EMV® MPM do Banco Central do Brasil.
-O payload é determinístico por pedido (txid = PED{id}), então
-regenerar é recomputar — não há estado persistido.
-"""
-
 import base64
 import io
-
+import unicodedata
 import qrcode
+
+
+def _sanitizar(texto: str) -> str:
+    """Remove acentos e caracteres especiais para compatibilidade ASCII."""
+    nfkd = unicodedata.normalize("NFKD", texto)
+    return "".join(c for c in nfkd if not unicodedata.combining(c))
 
 
 def _tlv(id: str, value: str) -> str:
@@ -18,12 +16,7 @@ def _tlv(id: str, value: str) -> str:
 
 
 def crc16_ccitt(data: str) -> str:
-    """
-    CRC16-CCITT (polinômio 0x1021, valor inicial 0xFFFF).
-
-    Mesma família do check value padrão da família CRC-16/CCITT-FALSE:
-    crc16_ccitt("123456789") == "29B1".
-    """
+    """CRC16-CCITT (polinômio 0x1021, valor inicial 0xFFFF)."""
     crc = 0xFFFF
     for byte in data.encode("ascii"):
         crc ^= byte << 8
@@ -35,31 +28,27 @@ def crc16_ccitt(data: str) -> str:
 
 def build_pix_payload(chave: str, nome: str, cidade: str, valor: float, txid: str) -> str:
     """
-    Monta o payload "copia e cola" completo (com CRC16 no final).
-
-    - nome truncado a 25 caracteres
-    - cidade truncada a 15 caracteres
-    - txid truncado a 25 caracteres
+    Monta o payload Pix Estático "copia e cola" completo (com CRC16 no final).
     """
-    nome = nome[:25]
-    cidade = cidade[:15]
-    txid = txid[:25]
+    nome = _sanitizar(nome).strip()[:25]
+    cidade = _sanitizar(cidade).strip()[:15]
+    # No Pix estático, o txid só pode conter letras e números (a-z, A-Z, 0-9) ou "***"
+    txid = _sanitizar(txid).strip()[:25] or "***"
 
+    # Campo 26 deve conter apenas o GUI (00) e a Chave Pix (01)
     merchant_account = (
-        _tlv("00", "br.gov.bcb.pix")
-        + _tlv("01", chave)
-        + _tlv("02", nome)
-        + _tlv("03", cidade)
+        _tlv("00", "BR.GOV.BCB.PIX")
+        + _tlv("01", chave.strip())
     )
     campo_62 = _tlv("05", txid)
 
     body = (
         _tlv("00", "01")
-        + _tlv("01", "12")
+        # Campo 01 omitido (ou "11" para estático; nunca "12" sem URL dinâmica)
         + _tlv("26", merchant_account)
         + _tlv("52", "0000")
         + _tlv("53", "986")
-        + _tlv("54", f"{valor:.2f}")
+        + (_tlv("54", f"{valor:.2f}") if valor and valor > 0 else "")
         + _tlv("58", "BR")
         + _tlv("59", nome)
         + _tlv("60", cidade)
