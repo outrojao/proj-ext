@@ -44,7 +44,7 @@ class Pedido(Base):
     painel_expirado_em = Column(DateTime, nullable=True)
     painel_entregue_em = Column(DateTime, nullable=True)
     painel_fila_posicao = Column(Integer, nullable=True)  # Posição na fila do painel (fim da fila = maior)
-    pagamento_declarado_em = Column(DateTime, nullable=True)  # "Já paguei" da PWA (persiste p/ sync offline)
+    pagamento_declarado_em = Column(DateTime(timezone=True), nullable=True)  # "Já paguei" da PWA (persiste p/ sync offline)
 
     itens = relationship("PedidoItem", back_populates="pedido", cascade="all, delete-orphan")
 

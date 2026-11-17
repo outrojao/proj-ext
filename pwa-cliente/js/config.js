@@ -24,5 +24,5 @@ export const CONFIG = {
 
   // Agendamento: somente para hoje
   AVISO_MIN: 20, // minutos mínimos de preparo p/ descartar slots passados
-  HORARIO: { abre: "08:00", fecha: "22:00", passo_min: 15 },
+  HORARIO: { abre: "16:00", fecha: "23:00", passo_min: 15 },
 };

@@ -7,13 +7,30 @@ export const CHAVE_SESSAO = "pwa_session";
 // ── Utilidades puras ──
 
 export function formatarBRL(valor) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor);
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(valor);
 }
 
 export function formatarTempo(segundos) {
   const s = Math.max(0, Math.floor(segundos));
   const minutos = Math.floor(s / 60);
   return `${String(minutos).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+}
+
+// Formata horário ISO para o horário de São Paulo.
+export function formatarHorarioRelogio(iso) {
+  if (iso == null) return "";
+
+  const data = new Date(iso);
+  if (Number.isNaN(data.getTime())) return "";
+
+  return data.toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 // Aberto/fechado conforme o horário configurado (função pura, testada).
@@ -49,7 +66,7 @@ export function montarSessao({ step, carrinho, pedido }) {
     step,
     carrinho: carrinho || [],
     pedido: pedido || null,
-    ts: Date.now()
+    ts: Date.now(),
   };
 }
 
@@ -68,10 +85,14 @@ function textoSessao(payload) {
 }
 
 function lerCookie() {
-  const trecho = document.cookie.split("; ").find((linha) => linha.startsWith(`${CHAVE_SESSAO}=`));
+  const trecho = document.cookie
+    .split("; ")
+    .find((linha) => linha.startsWith(`${CHAVE_SESSAO}=`));
   if (!trecho) return null;
   try {
-    return JSON.parse(decodeURIComponent(trecho.slice(CHAVE_SESSAO.length + 1)));
+    return JSON.parse(
+      decodeURIComponent(trecho.slice(CHAVE_SESSAO.length + 1)),
+    );
   } catch {
     return null;
   }
@@ -188,6 +209,6 @@ export function criarPoll(fn, intervaloMs) {
         timer = null;
       }
       document.removeEventListener("visibilitychange", aoVisibilidade);
-    }
+    },
   };
 }
