@@ -99,6 +99,13 @@ const DEMO_ITENS_SEED = [
 const DEMO_NOMES_CLIENTE = ["Rafael", "Bia", "Léo", "Duda", "Marcelo", "Tati"];
 const DEMO_OBS_CLIENTE = [null, "Sem cebola, por favor", null, "Trocando a mostarda por ketchup", null, "Sem pimenta"];
 
+// "HH:MM" para N minutos a partir de agora — formato validado pelo backend
+// (pattern ^([01]\d|2[0-3]):[0-5]\d$).
+function horarioDaqui(agora, minutos) {
+  const d = new Date(agora + minutos * 60000);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 let demo = null;
 let demoImgSeq = 1;
 
@@ -170,7 +177,7 @@ function demoSeed() {
     [
       1,
       {
-        id: 1, numero: null, senha_retirada: null, nome_cliente: "João", horario_agendamento: null,
+        id: 1, numero: null, senha_retirada: null, nome_cliente: "João", horario_agendamento: horarioDaqui(agora, 25),
         status: "PENDENTE", origem: "PWA_CLIENTE", total: 36,
         itens: [{ item_id: 1, quantidade: 2 }, { item_id: 3, quantidade: 1 }],
         pagamento_declarado_em: null,
@@ -181,7 +188,7 @@ function demoSeed() {
       2,
       {
         // já com declaração: o destaque âmbar aparece logo no boot do demo
-        id: 2, numero: null, senha_retirada: null, nome_cliente: "Maria", horario_agendamento: null,
+        id: 2, numero: null, senha_retirada: null, nome_cliente: "Maria", horario_agendamento: horarioDaqui(agora, 40),
         status: "CONFIRMADO", origem: "PWA_CLIENTE", total: 22,
         itens: [{ item_id: 2, quantidade: 1 }, { item_id: 3, quantidade: 1 }],
         pagamento_declarado_em: new Date(agora - 120000).toISOString(),
@@ -191,7 +198,7 @@ function demoSeed() {
     [
       3,
       {
-        id: 3, numero: 103, senha_retirada: "K7PQ", nome_cliente: "Pedro", horario_agendamento: null,
+        id: 3, numero: 103, senha_retirada: "K7PQ", nome_cliente: "Pedro", horario_agendamento: horarioDaqui(agora, 50),
         status: "PAGO", origem: "PWA_CLIENTE", total: 26,
         itens: [{ item_id: 1, quantidade: 1 }, { item_id: 4, quantidade: 1 }],
         pagamento_declarado_em: null,
@@ -201,7 +208,7 @@ function demoSeed() {
     [
       4,
       {
-        id: 4, numero: 104, senha_retirada: "M4TR", nome_cliente: "Ana", horario_agendamento: null,
+        id: 4, numero: 104, senha_retirada: "M4TR", nome_cliente: "Ana", horario_agendamento: horarioDaqui(agora, 65),
         status: "PRONTO", origem: "PWA_CLIENTE", total: 18,
         itens: [{ item_id: 3, quantidade: 1 }, { item_id: 5, quantidade: 1 }],
         pagamento_declarado_em: null,
@@ -212,7 +219,7 @@ function demoSeed() {
     [
       5,
       {
-        id: 5, numero: 105, senha_retirada: "H9XZ", nome_cliente: "Caio", horario_agendamento: null,
+        id: 5, numero: 105, senha_retirada: "H9XZ", nome_cliente: "Caio", horario_agendamento: horarioDaqui(agora, 80),
         status: "PRONTO", origem: "PWA_CLIENTE", total: 32,
         itens: [{ item_id: 2, quantidade: 2 }],
         pagamento_declarado_em: null,
@@ -307,13 +314,16 @@ function promoverProximoFila(estado) {
   return proximo;
 }
 
-// Cliente simulado (lazy, sem timer real): roda a cada demoAtender e aplica
-// tudo o que já "deveria ter acontecido" — mesmo padrão do criadoEm do demo
-// do cliente. O browser ganha cadência real via _demoTick() (ws.js).
+// Cliente simulado (lazy, sem timer real): roda a cada demoAtender — mesmo
+// padrão do criadoEm do demo do cliente. O browser ganha cadência real via
+// _demoTick() (ws.js). No máximo 1 pedido por chamada: se o relógio pulou
+// (F5 horas depois, máquina dormiu), os ciclos perdidos são pulados em vez
+// de virar uma rajada de pedidos.
 function demoClienteSimulado(estado) {
   const agora = Date.now();
+  let criadoId = null;
 
-  while (agora >= estado.proximoClienteEm) {
+  if (agora >= estado.proximoClienteEm) {
     // Adicionais não são itens de compra (idem pwa-cliente real): o
     // "cliente" só os escolhe junto de um item-base.
     const disponiveis = estado.itens.filter((i) => i.disponivel && !i.aplica_em?.length);
@@ -342,7 +352,9 @@ function demoClienteSimulado(estado) {
         senha_retirada: null,
         nome_cliente: DEMO_NOMES_CLIENTE[estado.clienteIdx % DEMO_NOMES_CLIENTE.length],
         observacao: DEMO_OBS_CLIENTE[estado.clienteIdx % DEMO_OBS_CLIENTE.length],
-        horario_agendamento: null,
+        // Agendamento é obrigatório no fluxo real (slot exigido na tela do
+        // cliente): o simulado sempre envia — 20 a 65 min à frente, rotacionando.
+        horario_agendamento: horarioDaqui(agora, 20 + (estado.clienteIdx % 4) * 15),
         status: "PENDENTE",
         origem: "PWA_CLIENTE",
         total,
@@ -354,10 +366,17 @@ function demoClienteSimulado(estado) {
         painel_fila_posicao: null
       };
       estado.pedidos.set(pedido.id, pedido);
-      emitDemoEvento("novo_pedido", { pedido_id: pedido.id, status: pedido.status });
+      criadoId = pedido.id;
     }
     estado.clienteIdx++;
-    estado.proximoClienteEm += CONFIG.DEMO_NOVO_PEDIDO_MS;
+    // fast-forward: se ainda estava atrás, pula os ciclos perdidos
+    estado.proximoClienteEm = agora + CONFIG.DEMO_NOVO_PEDIDO_MS;
+  }
+  // Evento SÓ depois de o estado estar atualizado: o ouvinte reentra em
+  // demoAtender (ws.js → app.js → apiGet); emitir antes faria a reentrada
+  // ver o relógio ainda atrás e criar pedidos em cascata até estourar a pilha.
+  if (criadoId != null) {
+    emitDemoEvento("novo_pedido", { pedido_id: criadoId, status: "PENDENTE" });
   }
 
   for (const pedido of estado.pedidos.values()) {
