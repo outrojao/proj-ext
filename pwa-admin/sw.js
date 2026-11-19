@@ -1,4 +1,4 @@
-const CACHE = "pwa-admin-v7";
+const CACHE = "pwa-admin-v8";
 
 // Sem cache de API de propósito: o atendente nunca deve operar com dados
 // de pedido/cardápio antigos — a rede é a fonte, o cache é só o shell offline.
