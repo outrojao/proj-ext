@@ -11,7 +11,7 @@ export const CONFIG = {
   // Modo demo: simula o backend E um cliente que cria pedidos e declara
   // pagamento sem rede. O atendente age manualmente em tudo (o ponto do demo).
   // TESTE LOCAL: false (backend dev em http://localhost:8000)
-  MODO_DEMO: false,
+  MODO_DEMO: false, // TESTE: reverter p/ false ao final
   DEMO_NOVO_PEDIDO_MS: 25000, // o "cliente" do demo cria um pedido novo a cada X ms
   DEMO_DECLARA_MS: 8000, // o "cliente" declara o pagamento X ms após o CONFIRMADO
 
