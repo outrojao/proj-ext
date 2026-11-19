@@ -90,6 +90,10 @@ test("seed: 7 itens (2 deles adicionais) + 5 pedidos cobrindo as 4 seções", as
   const maria = pedidos.find((p) => p.id === 2);
   assert.ok(maria.pagamento_declarado_em);
 
+  // agendamento é obrigatório: todo pedido mockado tem HH:MM válido
+  const HORARIO = /^([01]\d|2[0-3]):[0-5]\d$/;
+  assert.ok(pedidos.every((p) => HORARIO.test(p.horario_agendamento)));
+
   // respostas não expõem campos de painel (espelha o backend)
   assert.ok(!("painel_status" in maria));
   assert.ok(!("painel_fila_posicao" in maria));
@@ -342,6 +346,18 @@ test("demo: cliente simulado cria pedido novo após DEMO_NOVO_PEDIDO_MS (lazy)",
   assert.equal(novo.pagamento_declarado_em, null);
 });
 
+test("demo: relógio atrás (6+ ciclos perdidos) cria no máximo 1 pedido na chamada", async (t) => {
+  const desligar = demoLigar({ novoPedidoMs: 50, declaraMs: 60000 });
+  t.after(desligar);
+
+  const antes = await apiGet("/pedidos");
+  assert.equal(antes.length, 5);
+
+  await esperar(300); // simula F5 horas depois / máquina dormiu
+  const depois = await apiGet("/pedidos");
+  assert.equal(depois.length, 6); // só 1 novo, não uma rajada
+});
+
 test("demo: cliente simulado pede adicionais e observação (determinístico)", async (t) => {
   const desligar = demoLigar({ novoPedidoMs: 50, declaraMs: 60000 });
   t.after(desligar);
@@ -358,9 +374,12 @@ test("demo: cliente simulado pede adicionais e observação (determinístico)", 
   assert.equal(p1.itens[0].adicionais.length, 2); // Queijo extra + Carne extra
   assert.equal(p1.total, 22); // 15 + 2 + 5
   assert.equal(p1.observacao, null); // idx 0
+  // agendamento obrigatório (idx 0: 20 min à frente)
+  assert.match(p1.horario_agendamento, /^([01]\d|2[0-3]):[0-5]\d$/);
 
   await esperar(80); // idx 1: outro item, sem adicionais, com observação
   const p2 = (await apiGet("/pedidos")).find((p) => p.id === 7);
   assert.equal(p2.itens[0].adicionais.length, 0);
   assert.equal(p2.observacao, "Sem cebola, por favor");
+  assert.match(p2.horario_agendamento, /^([01]\d|2[0-3]):[0-5]\d$/); // idx 1: 35 min
 });
