@@ -125,7 +125,9 @@ export function abrirDetalhe(pedido, itens = []) {
     ["Pedido", pedido.numero != null ? String(pedido.numero) : null],
     ["Senha de retirada", pedido.senha_retirada || null],
     ["Observação", pedido.observacao || null],
-    ["Referência Pix", referenciaPix(pedido.id)],
+    // A referência só existe a partir do CONFIRMADO: é o único status em que
+    // o backend gera o Pix — antes disso não há nada a apontar no extrato.
+    ["Referência Pix", ["CONFIRMADO", "PAGO", "PRONTO", "ENTREGUE"].includes(pedido.status) ? referenciaPix(pedido.id) : null],
     ["Cliente declarou pagamento", pedido.pagamento_declarado_em ? formatarHorarioRelogio(pedido.pagamento_declarado_em) : null]
   ];
   for (const [rotulo, valor] of pares) {
