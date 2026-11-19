@@ -45,6 +45,7 @@ class Pedido(Base):
     painel_entregue_em = Column(DateTime, nullable=True)
     painel_fila_posicao = Column(Integer, nullable=True)  # Posição na fila do painel (fim da fila = maior)
     pagamento_declarado_em = Column(DateTime(timezone=True), nullable=True)  # "Já paguei" da PWA (persiste p/ sync offline)
+    pago_em = Column(DateTime(timezone=True), nullable=True)  # Quando virou PAGO — âncora da numeração diária
 
     itens = relationship("PedidoItem", back_populates="pedido", cascade="all, delete-orphan")
 
