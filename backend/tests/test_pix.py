@@ -14,9 +14,9 @@ def test_crc16_check_value_padrao():
 
 def test_payload_prefixo_e_campos():
     payload = build_pix_payload("12345678901", "Loja", "Recife", 42.5, "PED1")
-    assert payload.startswith("000201")
-    assert "010212" in payload  # campo 01 = MCC "12"
-    assert "0014br.gov.bcb.pix" in payload
+    # Campo 01 (MCC) omitido no Pix estático: após o version, o campo 26 vem direto
+    assert payload.startswith("00020126")
+    assert "0014BR.GOV.BCB.PIX" in payload
     assert "52040000" in payload
     assert "5303986" in payload
     assert "540542.50" in payload
