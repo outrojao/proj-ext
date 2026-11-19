@@ -82,6 +82,11 @@
 
   /* Espaçamento base (escala em múltiplos de 4px) */
   --esp: 16px;
+
+  /* Altura real do header sticky: botão-som 44px + paddings 10px + borda 1px
+     + safe-area do topo (notch em standalone). Os elementos sticky abaixo
+     (.tabs, seções) usam este valor para não enfiar sob o header. */
+  --altura-topo: calc(55px + max(10px, env(safe-area-inset-top)));
 }
 
 /* ── Reset / base ── */
@@ -326,7 +331,7 @@ code {
   background: var(--cor-superficie);
   border-bottom: 1px solid var(--cor-borda);
   position: sticky;
-  top: 52px;
+  top: var(--altura-topo);
   z-index: 19;
 }
 
@@ -1647,7 +1652,8 @@ h1 {
 
   .secao-cabecalho {
     position: sticky;
-    top: 108px;
+    /* header + abas (8px de padding + 48px da aba + 1px de borda) */
+    top: calc(var(--altura-topo) + 57px);
     background: var(--cor-fundo);
     padding: 4px 2px;
     z-index: 2;
