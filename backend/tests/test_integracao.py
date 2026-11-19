@@ -12,6 +12,7 @@ import json
 import re
 
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
 # Alfabeto da senha de retirada: 30 chars, sem 0/1/I/O
 ALFABETO_SENHA = re.compile(r"^[A-HJ-NP-Z2-9]{4}$")
@@ -200,6 +201,29 @@ def test_pago_gera_numero_e_senha_identicos_nos_dois_lados(client, api_headers):
     # Confirmar pagamento limpa a declaração
     assert no_admin["pagamento_declarado_em"] is None
     assert no_cliente["pagamento_declarado_em"] is None
+
+
+def test_numero_reinicia_no_primeiro_pago_de_cada_dia(client, api_headers, db_session):
+    """A loja só opera pedidos do dia: o 1º PAGO de um novo dia reinicia em 1."""
+    item = _criar_item(client, api_headers)
+
+    def _pago():
+        pedido = _criar_pedido(client, api_headers, itens=[{"item_id": item["id"], "quantidade": 1}])
+        _mudar_status(client, api_headers, pedido["id"], "CONFIRMADO")
+        _mudar_status(client, api_headers, pedido["id"], "PAGO")
+        return client.get(f"/pedidos/{pedido['id']}", headers=api_headers["app"]).json()
+
+    assert _pago()["numero"] == 1
+
+    # Simula a loja tendo fechado ONTEM com pedido pago: empurra a âncora
+    # pago_em 26 h para trás (garante cruzar a virada do dia no fuso da loja).
+    db_session.execute(
+        text("UPDATE pedidos SET pago_em = pago_em - interval '26 hours' WHERE numero IS NOT NULL")
+    )
+    db_session.commit()
+
+    assert _pago()["numero"] == 1  # novo dia → reinicia
+    assert _pago()["numero"] == 2  # mesmo dia → continua
 
 
 def test_adicionais_por_linha_e_observacao_do_cliente_no_admin(client, api_headers):
